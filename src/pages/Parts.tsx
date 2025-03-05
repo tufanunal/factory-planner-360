@@ -1,11 +1,10 @@
-
 import { useState } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Box, Search, Filter, BarChart3, Plus, Trash2 } from 'lucide-react';
+import { Box, Search, Filter, BarChart3, Plus, Trash2, Pencil } from 'lucide-react';
 import { Part } from '@/types/part';
 import PartCard from '@/components/parts/PartCard';
 import PartEditModal from '@/components/parts/PartEditModal';
@@ -16,7 +15,6 @@ const PartsPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedPart, setSelectedPart] = useState<Part | null>(null);
   
-  // Mock parts data
   const [parts, setParts] = useState<Part[]>([
     { 
       id: 1, 
@@ -74,14 +72,12 @@ const PartsPage = () => {
     },
   ]);
   
-  // Filter parts based on search query
   const filteredParts = parts.filter(part => 
     part.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
     part.sku.toLowerCase().includes(searchQuery.toLowerCase()) ||
     part.category.toLowerCase().includes(searchQuery.toLowerCase())
   );
   
-  // Function to get status badge styling
   const getStatusBadge = (status: Part['status']) => {
     switch (status) {
       case 'Active':
@@ -107,14 +103,12 @@ const PartsPage = () => {
 
   const handleSavePart = (part: Part) => {
     if (part.id === 0) {
-      // Add new part
       const newPart = {
         ...part,
         id: Math.max(0, ...parts.map(p => p.id)) + 1
       };
       setParts([...parts, newPart]);
     } else {
-      // Update existing part
       setParts(parts.map(p => p.id === part.id ? part : p));
     }
     handleCloseModal();
@@ -207,7 +201,7 @@ const PartsPage = () => {
                             size="icon"
                             onClick={() => handleOpenModal(part)}
                           >
-                            <Plus className="h-4 w-4" />
+                            <Pencil className="h-4 w-4" />
                           </Button>
                           <Button 
                             variant="ghost" 
