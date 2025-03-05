@@ -1,14 +1,18 @@
 
+import { useState } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Settings, Clock, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { AlertTriangle, CheckCircle, PlusCircle } from 'lucide-react';
+import { Machine } from '@/types/machine';
+import MachineCard from '@/components/machines/MachineCard';
+import MachineEditModal from '@/components/machines/MachineEditModal';
+import { toast } from 'sonner';
 
 const MachinesPage = () => {
   // Mock data for machines
-  const machines = [
+  const [machines, setMachines] = useState<Machine[]>([
     { 
       id: 1, 
       name: 'CNC Machine A', 
@@ -45,20 +49,37 @@ const MachinesPage = () => {
       lastMaintenance: '2023-07-01',
       nextMaintenance: '2023-10-01',
     },
-  ];
+  ]);
 
-  // Function to get status badge styling
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'Operational':
-        return 'bg-green-100 text-green-600 hover:bg-green-200';
-      case 'Maintenance':
-        return 'bg-amber-100 text-amber-600 hover:bg-amber-200';
-      case 'Offline':
-        return 'bg-red-100 text-red-600 hover:bg-red-200';
-      default:
-        return 'bg-gray-100 text-gray-600 hover:bg-gray-200';
+  const [editingMachine, setEditingMachine] = useState<Machine | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const handleEditMachine = (machine: Machine) => {
+    setEditingMachine(machine);
+    setIsModalOpen(true);
+  };
+
+  const handleAddNewMachine = () => {
+    setEditingMachine(null);
+    setIsModalOpen(true);
+  };
+
+  const handleSaveMachine = (updatedMachine: Machine) => {
+    if (updatedMachine.id) {
+      // Update existing machine
+      setMachines(machines.map(machine => 
+        machine.id === updatedMachine.id ? updatedMachine : machine
+      ));
+    } else {
+      // Add new machine
+      const newMachine = {
+        ...updatedMachine,
+        id: Math.max(0, ...machines.map(m => m.id)) + 1
+      };
+      setMachines([...machines, newMachine]);
+      toast.success('New machine added successfully');
     }
+    setIsModalOpen(false);
   };
 
   return (
@@ -66,146 +87,115 @@ const MachinesPage = () => {
       title="Machines" 
       description="Manage machine availability, setup time and maintenance schedules"
     >
-      <Tabs defaultValue="overview">
-        <TabsList className="grid w-full grid-cols-3 mb-6 animate-fade-in">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="planning">Production Planning</TabsTrigger>
-          <TabsTrigger value="maintenance">Maintenance</TabsTrigger>
-        </TabsList>
+      <div className="flex justify-between items-center mb-6">
+        <Tabs defaultValue="overview" className="w-full">
+          <div className="flex justify-between items-center">
+            <TabsList className="grid w-[400px] grid-cols-3 animate-fade-in">
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="planning">Planning</TabsTrigger>
+              <TabsTrigger value="maintenance">Maintenance</TabsTrigger>
+            </TabsList>
+            <Button onClick={handleAddNewMachine} className="ml-auto">
+              <PlusCircle className="mr-2 h-4 w-4" /> Add Machine
+            </Button>
+          </div>
+              
+          <TabsContent value="overview" className="animate-slide-up mt-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {machines.map((machine) => (
+                <MachineCard 
+                  key={machine.id} 
+                  machine={machine} 
+                  onEdit={handleEditMachine} 
+                />
+              ))}
+            </div>
             
-        <TabsContent value="overview" className="animate-slide-up">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {machines.map((machine) => (
-              <Card key={machine.id}>
-                <CardHeader className="pb-2">
-                  <div className="flex justify-between items-start">
-                    <CardTitle className="text-lg">{machine.name}</CardTitle>
-                    <Badge variant="outline" className={getStatusBadge(machine.status)}>
-                      {machine.status}
-                    </Badge>
-                  </div>
-                  <CardDescription>
-                    Last maintained on {machine.lastMaintenance}
-                  </CardDescription>
+            <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+              <Card className="md:col-span-3">
+                <CardHeader>
+                  <CardTitle>Machine Availability Overview</CardTitle>
+                  <CardDescription>Average availability of all machines</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-sm font-medium">Availability</span>
-                        <span className="text-sm font-medium">{machine.availability}%</span>
-                      </div>
-                      <Progress value={machine.availability} className="h-2" />
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="flex flex-col">
-                        <span className="text-xs text-muted-foreground">Setup Time</span>
-                        <span className="font-medium">{machine.setupTime}</span>
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="text-xs text-muted-foreground">Next Maintenance</span>
-                        <span className="font-medium">{machine.nextMaintenance}</span>
-                      </div>
-                    </div>
-                    
-                    <div className="pt-4 border-t border-border flex justify-between items-center">
-                      <div className="flex items-center text-sm text-muted-foreground">
-                        <Settings className="h-4 w-4 mr-1" />
-                        <span>Machine Details</span>
-                      </div>
-                      <div className="flex items-center text-sm text-muted-foreground">
-                        <Clock className="h-4 w-4 mr-1" />
-                        <span>Timeline</span>
-                      </div>
-                    </div>
+                  <div className="h-[200px] flex items-center justify-center text-center">
+                    <p className="text-muted-foreground">Machine performance charts will be displayed here</p>
                   </div>
                 </CardContent>
               </Card>
-            ))}
-          </div>
+            </div>
+          </TabsContent>
           
-          <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Card className="md:col-span-3">
+          <TabsContent value="planning" className="animate-slide-up">
+            <Card>
               <CardHeader>
-                <CardTitle>Machine Availability Overview</CardTitle>
-                <CardDescription>Average availability of all machines</CardDescription>
+                <CardTitle>Production Planning</CardTitle>
+                <CardDescription>Schedule and optimize machine usage</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="h-[200px] flex items-center justify-center text-center">
-                  <p className="text-muted-foreground">Machine performance charts will be displayed here</p>
+                <div className="h-[400px] flex items-center justify-center text-center">
+                  <div>
+                    <AlertTriangle className="h-10 w-10 text-amber-500 mx-auto mb-4" />
+                    <p className="text-muted-foreground">
+                      Production planning interface will be implemented in the next phase
+                    </p>
+                  </div>
                 </div>
               </CardContent>
             </Card>
-          </div>
-        </TabsContent>
-        
-        <TabsContent value="planning" className="animate-slide-up">
-          <Card>
-            <CardHeader>
-              <CardTitle>Production Planning</CardTitle>
-              <CardDescription>Schedule and optimize machine usage</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[400px] flex items-center justify-center text-center">
-                <div>
-                  <AlertTriangle className="h-10 w-10 text-amber-500 mx-auto mb-4" />
-                  <p className="text-muted-foreground">
-                    Production planning interface will be implemented in the next phase
-                  </p>
+          </TabsContent>
+          
+          <TabsContent value="maintenance" className="animate-slide-up">
+            <Card>
+              <CardHeader>
+                <CardTitle>Maintenance Schedule</CardTitle>
+                <CardDescription>Upcoming and past maintenance activities</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {machines.map((machine) => (
+                    <div 
+                      key={`maint-${machine.id}`}
+                      className="p-4 border rounded-lg flex justify-between items-center"
+                    >
+                      <div className="flex items-center">
+                        <div className={`h-10 w-10 rounded-full mr-4 flex items-center justify-center ${
+                          new Date(machine.nextMaintenance) <= new Date() 
+                            ? 'bg-red-100 text-red-600' 
+                            : 'bg-green-100 text-green-600'
+                        }`}>
+                          {new Date(machine.nextMaintenance) <= new Date() 
+                            ? <AlertTriangle className="h-5 w-5" />
+                            : <CheckCircle className="h-5 w-5" />
+                          }
+                        </div>
+                        <div>
+                          <h3 className="font-medium">{machine.name}</h3>
+                          <p className="text-sm text-muted-foreground">
+                            Next scheduled: {machine.nextMaintenance}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button variant="outline" size="sm" onClick={() => handleEditMachine(machine)}>
+                          Edit
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="maintenance" className="animate-slide-up">
-          <Card>
-            <CardHeader>
-              <CardTitle>Maintenance Schedule</CardTitle>
-              <CardDescription>Upcoming and past maintenance activities</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {machines.map((machine) => (
-                  <div 
-                    key={`maint-${machine.id}`}
-                    className="p-4 border rounded-lg flex justify-between items-center"
-                  >
-                    <div className="flex items-center">
-                      <div className={`h-10 w-10 rounded-full mr-4 flex items-center justify-center ${
-                        new Date(machine.nextMaintenance) <= new Date() 
-                          ? 'bg-red-100 text-red-600' 
-                          : 'bg-green-100 text-green-600'
-                      }`}>
-                        {new Date(machine.nextMaintenance) <= new Date() 
-                          ? <AlertTriangle className="h-5 w-5" />
-                          : <CheckCircle className="h-5 w-5" />
-                        }
-                      </div>
-                      <div>
-                        <h3 className="font-medium">{machine.name}</h3>
-                        <p className="text-sm text-muted-foreground">
-                          Next scheduled: {machine.nextMaintenance}
-                        </p>
-                      </div>
-                    </div>
-                    <div>
-                      <Badge variant="outline" className={
-                        new Date(machine.nextMaintenance) <= new Date() 
-                          ? 'bg-red-100 text-red-600' 
-                          : 'bg-green-100 text-green-600'
-                      }>
-                        {new Date(machine.nextMaintenance) <= new Date() ? 'Overdue' : 'Scheduled'}
-                      </Badge>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
+
+      <MachineEditModal 
+        machine={editingMachine} 
+        open={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        onSave={handleSaveMachine} 
+      />
     </DashboardLayout>
   );
 };
