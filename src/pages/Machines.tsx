@@ -10,51 +10,11 @@ import MachineCard from '@/components/machines/MachineCard';
 import MachineEditModal from '@/components/machines/MachineEditModal';
 import { toast } from 'sonner';
 
-// Define initial machines data
-const initialMachinesData: Machine[] = [
-  { 
-    id: 1, 
-    name: 'CNC Machine A', 
-    status: 'Operational', 
-    availability: 97,
-    setupTime: '45 min',
-    lastMaintenance: '2023-05-15',
-    nextMaintenance: '2023-08-15',
-  },
-  { 
-    id: 2, 
-    name: 'Assembly Line B', 
-    status: 'Operational', 
-    availability: 92,
-    setupTime: '120 min',
-    lastMaintenance: '2023-06-10',
-    nextMaintenance: '2023-09-10',
-  },
-  { 
-    id: 3, 
-    name: 'Injection Mold C', 
-    status: 'Maintenance', 
-    availability: 0,
-    setupTime: '90 min',
-    lastMaintenance: '2023-07-01',
-    nextMaintenance: '2023-07-03',
-  },
-  { 
-    id: 4, 
-    name: 'Packaging Unit D', 
-    status: 'Operational', 
-    availability: 99,
-    setupTime: '30 min',
-    lastMaintenance: '2023-07-01',
-    nextMaintenance: '2023-10-01',
-  },
-];
-
 const MachinesPage = () => {
-  // Load machines from localStorage or use initial data
+  // Load machines from localStorage or initialize with empty array
   const [machines, setMachines] = useState<Machine[]>(() => {
     const savedMachines = localStorage.getItem('machines');
-    return savedMachines ? JSON.parse(savedMachines) : initialMachinesData;
+    return savedMachines ? JSON.parse(savedMachines) : [];
   });
 
   const [editingMachine, setEditingMachine] = useState<Machine | null>(null);
@@ -93,12 +53,6 @@ const MachinesPage = () => {
     setIsModalOpen(false);
   };
 
-  // Add reset functionality
-  const handleResetData = () => {
-    setMachines(initialMachinesData);
-    toast.success('Machines data has been reset to default');
-  };
-
   return (
     <DashboardLayout 
       title="Machines" 
@@ -112,44 +66,48 @@ const MachinesPage = () => {
               <TabsTrigger value="planning">Planning</TabsTrigger>
               <TabsTrigger value="maintenance">Maintenance</TabsTrigger>
             </TabsList>
-            <div className="ml-auto flex space-x-2">
-              <Button onClick={handleAddNewMachine}>
-                <PlusCircle className="mr-2 h-4 w-4" /> Add Machine
-              </Button>
-              <Button 
-                variant="outline" 
-                className="text-red-500"
-                onClick={handleResetData}
-              >
-                Reset Data
-              </Button>
-            </div>
+            <Button onClick={handleAddNewMachine} className="ml-auto">
+              <PlusCircle className="mr-2 h-4 w-4" /> Add Machine
+            </Button>
           </div>
               
           <TabsContent value="overview" className="animate-slide-up mt-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {machines.map((machine) => (
-                <MachineCard 
-                  key={machine.id} 
-                  machine={machine} 
-                  onEdit={handleEditMachine} 
-                />
-              ))}
-            </div>
-            
-            <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
-              <Card className="md:col-span-3">
-                <CardHeader>
-                  <CardTitle>Machine Availability Overview</CardTitle>
-                  <CardDescription>Average availability of all machines</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-[200px] flex items-center justify-center text-center">
-                    <p className="text-muted-foreground">Machine performance charts will be displayed here</p>
-                  </div>
-                </CardContent>
+            {machines.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {machines.map((machine) => (
+                  <MachineCard 
+                    key={machine.id} 
+                    machine={machine} 
+                    onEdit={handleEditMachine} 
+                  />
+                ))}
+              </div>
+            ) : (
+              <Card className="p-8 text-center">
+                <div className="flex flex-col items-center justify-center space-y-3">
+                  <p className="text-muted-foreground">No machines added yet.</p>
+                  <Button onClick={handleAddNewMachine}>
+                    <PlusCircle className="mr-2 h-4 w-4" /> Add Your First Machine
+                  </Button>
+                </div>
               </Card>
-            </div>
+            )}
+            
+            {machines.length > 0 && (
+              <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+                <Card className="md:col-span-3">
+                  <CardHeader>
+                    <CardTitle>Machine Availability Overview</CardTitle>
+                    <CardDescription>Average availability of all machines</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-[200px] flex items-center justify-center text-center">
+                      <p className="text-muted-foreground">Machine performance charts will be displayed here</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
           </TabsContent>
           
           <TabsContent value="planning" className="animate-slide-up">
@@ -178,38 +136,47 @@ const MachinesPage = () => {
                 <CardDescription>Upcoming and past maintenance activities</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {machines.map((machine) => (
-                    <div 
-                      key={`maint-${machine.id}`}
-                      className="p-4 border rounded-lg flex justify-between items-center"
-                    >
-                      <div className="flex items-center">
-                        <div className={`h-10 w-10 rounded-full mr-4 flex items-center justify-center ${
-                          new Date(machine.nextMaintenance) <= new Date() 
-                            ? 'bg-red-100 text-red-600' 
-                            : 'bg-green-100 text-green-600'
-                        }`}>
-                          {new Date(machine.nextMaintenance) <= new Date() 
-                            ? <AlertTriangle className="h-5 w-5" />
-                            : <CheckCircle className="h-5 w-5" />
-                          }
+                {machines.length > 0 ? (
+                  <div className="space-y-4">
+                    {machines.map((machine) => (
+                      <div 
+                        key={`maint-${machine.id}`}
+                        className="p-4 border rounded-lg flex justify-between items-center"
+                      >
+                        <div className="flex items-center">
+                          <div className={`h-10 w-10 rounded-full mr-4 flex items-center justify-center ${
+                            new Date(machine.nextMaintenance) <= new Date() 
+                              ? 'bg-red-100 text-red-600' 
+                              : 'bg-green-100 text-green-600'
+                          }`}>
+                            {new Date(machine.nextMaintenance) <= new Date() 
+                              ? <AlertTriangle className="h-5 w-5" />
+                              : <CheckCircle className="h-5 w-5" />
+                            }
+                          </div>
+                          <div>
+                            <h3 className="font-medium">{machine.name}</h3>
+                            <p className="text-sm text-muted-foreground">
+                              Next scheduled: {machine.nextMaintenance}
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <h3 className="font-medium">{machine.name}</h3>
-                          <p className="text-sm text-muted-foreground">
-                            Next scheduled: {machine.nextMaintenance}
-                          </p>
+                        <div className="flex items-center gap-2">
+                          <Button variant="outline" size="sm" onClick={() => handleEditMachine(machine)}>
+                            Edit
+                          </Button>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Button variant="outline" size="sm" onClick={() => handleEditMachine(machine)}>
-                          Edit
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-8 text-center">
+                    <p className="text-muted-foreground">No machines added yet.</p>
+                    <Button onClick={handleAddNewMachine} className="mt-4">
+                      <PlusCircle className="mr-2 h-4 w-4" /> Add Your First Machine
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
