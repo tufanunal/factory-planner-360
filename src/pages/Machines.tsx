@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -10,49 +10,60 @@ import MachineCard from '@/components/machines/MachineCard';
 import MachineEditModal from '@/components/machines/MachineEditModal';
 import { toast } from 'sonner';
 
+// Define initial machines data
+const initialMachinesData: Machine[] = [
+  { 
+    id: 1, 
+    name: 'CNC Machine A', 
+    status: 'Operational', 
+    availability: 97,
+    setupTime: '45 min',
+    lastMaintenance: '2023-05-15',
+    nextMaintenance: '2023-08-15',
+  },
+  { 
+    id: 2, 
+    name: 'Assembly Line B', 
+    status: 'Operational', 
+    availability: 92,
+    setupTime: '120 min',
+    lastMaintenance: '2023-06-10',
+    nextMaintenance: '2023-09-10',
+  },
+  { 
+    id: 3, 
+    name: 'Injection Mold C', 
+    status: 'Maintenance', 
+    availability: 0,
+    setupTime: '90 min',
+    lastMaintenance: '2023-07-01',
+    nextMaintenance: '2023-07-03',
+  },
+  { 
+    id: 4, 
+    name: 'Packaging Unit D', 
+    status: 'Operational', 
+    availability: 99,
+    setupTime: '30 min',
+    lastMaintenance: '2023-07-01',
+    nextMaintenance: '2023-10-01',
+  },
+];
+
 const MachinesPage = () => {
-  // Mock data for machines
-  const [machines, setMachines] = useState<Machine[]>([
-    { 
-      id: 1, 
-      name: 'CNC Machine A', 
-      status: 'Operational', 
-      availability: 97,
-      setupTime: '45 min',
-      lastMaintenance: '2023-05-15',
-      nextMaintenance: '2023-08-15',
-    },
-    { 
-      id: 2, 
-      name: 'Assembly Line B', 
-      status: 'Operational', 
-      availability: 92,
-      setupTime: '120 min',
-      lastMaintenance: '2023-06-10',
-      nextMaintenance: '2023-09-10',
-    },
-    { 
-      id: 3, 
-      name: 'Injection Mold C', 
-      status: 'Maintenance', 
-      availability: 0,
-      setupTime: '90 min',
-      lastMaintenance: '2023-07-01',
-      nextMaintenance: '2023-07-03',
-    },
-    { 
-      id: 4, 
-      name: 'Packaging Unit D', 
-      status: 'Operational', 
-      availability: 99,
-      setupTime: '30 min',
-      lastMaintenance: '2023-07-01',
-      nextMaintenance: '2023-10-01',
-    },
-  ]);
+  // Load machines from localStorage or use initial data
+  const [machines, setMachines] = useState<Machine[]>(() => {
+    const savedMachines = localStorage.getItem('machines');
+    return savedMachines ? JSON.parse(savedMachines) : initialMachinesData;
+  });
 
   const [editingMachine, setEditingMachine] = useState<Machine | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Save machines to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('machines', JSON.stringify(machines));
+  }, [machines]);
 
   const handleEditMachine = (machine: Machine) => {
     setEditingMachine(machine);
@@ -82,6 +93,12 @@ const MachinesPage = () => {
     setIsModalOpen(false);
   };
 
+  // Add reset functionality
+  const handleResetData = () => {
+    setMachines(initialMachinesData);
+    toast.success('Machines data has been reset to default');
+  };
+
   return (
     <DashboardLayout 
       title="Machines" 
@@ -95,9 +112,18 @@ const MachinesPage = () => {
               <TabsTrigger value="planning">Planning</TabsTrigger>
               <TabsTrigger value="maintenance">Maintenance</TabsTrigger>
             </TabsList>
-            <Button onClick={handleAddNewMachine} className="ml-auto">
-              <PlusCircle className="mr-2 h-4 w-4" /> Add Machine
-            </Button>
+            <div className="ml-auto flex space-x-2">
+              <Button onClick={handleAddNewMachine}>
+                <PlusCircle className="mr-2 h-4 w-4" /> Add Machine
+              </Button>
+              <Button 
+                variant="outline" 
+                className="text-red-500"
+                onClick={handleResetData}
+              >
+                Reset Data
+              </Button>
+            </div>
           </div>
               
           <TabsContent value="overview" className="animate-slide-up mt-6">
