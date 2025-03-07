@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -10,67 +10,76 @@ import PartCard from '@/components/parts/PartCard';
 import PartEditModal from '@/components/parts/PartEditModal';
 import { toast } from 'sonner';
 
+const initialPartsData: Part[] = [
+  { 
+    id: 1, 
+    sku: 'P-1001', 
+    name: 'Aluminum Frame',
+    category: 'Structural',
+    qualityRate: 99.7,
+    stock: 152,
+    status: 'Active'
+  },
+  { 
+    id: 2, 
+    sku: 'P-1002', 
+    name: 'Steel Bearing',
+    category: 'Mechanical',
+    qualityRate: 99.9,
+    stock: 543,
+    status: 'Active'
+  },
+  { 
+    id: 3, 
+    sku: 'P-1003', 
+    name: 'Circuit Board',
+    category: 'Electronic',
+    qualityRate: 98.5,
+    stock: 28,
+    status: 'Low Stock'
+  },
+  { 
+    id: 4, 
+    sku: 'P-1004', 
+    name: 'Plastic Housing',
+    category: 'Enclosures',
+    qualityRate: 99.2,
+    stock: 205,
+    status: 'Active'
+  },
+  { 
+    id: 5, 
+    sku: 'P-1005', 
+    name: 'Power Supply',
+    category: 'Electronic',
+    qualityRate: 99.0,
+    stock: 15,
+    status: 'Low Stock'
+  },
+  { 
+    id: 6, 
+    sku: 'P-1006', 
+    name: 'Control Panel',
+    category: 'Interface',
+    qualityRate: 99.8,
+    stock: 0,
+    status: 'Discontinued'
+  },
+];
+
 const PartsPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedPart, setSelectedPart] = useState<Part | null>(null);
   
-  const [parts, setParts] = useState<Part[]>([
-    { 
-      id: 1, 
-      sku: 'P-1001', 
-      name: 'Aluminum Frame',
-      category: 'Structural',
-      qualityRate: 99.7,
-      stock: 152,
-      status: 'Active'
-    },
-    { 
-      id: 2, 
-      sku: 'P-1002', 
-      name: 'Steel Bearing',
-      category: 'Mechanical',
-      qualityRate: 99.9,
-      stock: 543,
-      status: 'Active'
-    },
-    { 
-      id: 3, 
-      sku: 'P-1003', 
-      name: 'Circuit Board',
-      category: 'Electronic',
-      qualityRate: 98.5,
-      stock: 28,
-      status: 'Low Stock'
-    },
-    { 
-      id: 4, 
-      sku: 'P-1004', 
-      name: 'Plastic Housing',
-      category: 'Enclosures',
-      qualityRate: 99.2,
-      stock: 205,
-      status: 'Active'
-    },
-    { 
-      id: 5, 
-      sku: 'P-1005', 
-      name: 'Power Supply',
-      category: 'Electronic',
-      qualityRate: 99.0,
-      stock: 15,
-      status: 'Low Stock'
-    },
-    { 
-      id: 6, 
-      sku: 'P-1006', 
-      name: 'Control Panel',
-      category: 'Interface',
-      qualityRate: 99.8,
-      stock: 0,
-      status: 'Discontinued'
-    },
-  ]);
+  const [parts, setParts] = useState<Part[]>(() => {
+    const savedParts = localStorage.getItem('parts');
+    return savedParts ? JSON.parse(savedParts) : initialPartsData;
+  });
+  
+  useEffect(() => {
+    localStorage.setItem('parts', JSON.stringify(parts));
+  }, [parts]);
   
   const filteredParts = parts.filter(part => 
     part.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -119,6 +128,11 @@ const PartsPage = () => {
     toast.success("Part removed successfully");
   };
 
+  const handleResetData = () => {
+    setParts(initialPartsData);
+    toast.success("Parts data has been reset to default");
+  };
+
   return (
     <DashboardLayout 
       title="Parts" 
@@ -157,6 +171,13 @@ const PartsPage = () => {
               <Button variant="outline" className="flex items-center">
                 <Filter className="mr-2 h-4 w-4" />
                 Filters
+              </Button>
+              <Button 
+                variant="outline" 
+                className="flex items-center text-red-500"
+                onClick={handleResetData}
+              >
+                Reset Data
               </Button>
             </div>
             
