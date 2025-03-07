@@ -7,15 +7,17 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { Machine } from '@/types/machine';
+import { DEFAULT_CATEGORY } from './CategoryManager';
 
 interface MachineEditModalProps {
   machine: Machine | null;
   open: boolean;
   onClose: () => void;
   onSave: (machine: Machine) => void;
+  categories?: string[];
 }
 
-const MachineEditModal = ({ machine, open, onClose, onSave }: MachineEditModalProps) => {
+const MachineEditModal = ({ machine, open, onClose, onSave, categories = [DEFAULT_CATEGORY] }: MachineEditModalProps) => {
   const [formData, setFormData] = useState<Machine>({
     id: 0,
     name: '',
@@ -24,13 +26,16 @@ const MachineEditModal = ({ machine, open, onClose, onSave }: MachineEditModalPr
     setupTime: '',
     lastMaintenance: '',
     nextMaintenance: '',
-    category: '',
+    category: DEFAULT_CATEGORY,
     compatibleParts: [],
   });
 
   useEffect(() => {
     if (machine) {
-      setFormData(machine);
+      setFormData({
+        ...machine,
+        category: machine.category || DEFAULT_CATEGORY
+      });
     } else {
       // Reset form for new machine
       setFormData({
@@ -41,7 +46,7 @@ const MachineEditModal = ({ machine, open, onClose, onSave }: MachineEditModalPr
         setupTime: '',
         lastMaintenance: new Date().toISOString().split('T')[0],
         nextMaintenance: new Date().toISOString().split('T')[0],
-        category: '',
+        category: DEFAULT_CATEGORY,
         compatibleParts: [],
       });
     }
@@ -97,7 +102,7 @@ const MachineEditModal = ({ machine, open, onClose, onSave }: MachineEditModalPr
               </Label>
               <Select 
                 value={formData.status} 
-                onValueChange={(value) => handleChange('status', value)}
+                onValueChange={(value) => handleChange('status', value as 'Operational' | 'Maintenance' | 'Offline')}
               >
                 <SelectTrigger className="col-span-3">
                   <SelectValue placeholder="Select status" />
@@ -162,13 +167,19 @@ const MachineEditModal = ({ machine, open, onClose, onSave }: MachineEditModalPr
               <Label htmlFor="category" className="text-right">
                 Category
               </Label>
-              <Input
-                id="category"
-                value={formData.category || ''}
-                onChange={(e) => handleChange('category', e.target.value)}
-                className="col-span-3"
-                placeholder="e.g. CNC, Assembly, Inspection"
-              />
+              <Select 
+                value={formData.category || DEFAULT_CATEGORY} 
+                onValueChange={(value) => handleChange('category', value)}
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map((category) => (
+                    <SelectItem key={category} value={category}>{category}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="compatibleParts" className="text-right">
