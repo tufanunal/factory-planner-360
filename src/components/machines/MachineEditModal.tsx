@@ -24,15 +24,30 @@ const MachineEditModal = ({ machine, open, onClose, onSave }: MachineEditModalPr
     setupTime: '',
     lastMaintenance: '',
     nextMaintenance: '',
+    category: '',
+    compatibleParts: [],
   });
 
   useEffect(() => {
     if (machine) {
       setFormData(machine);
+    } else {
+      // Reset form for new machine
+      setFormData({
+        id: 0,
+        name: '',
+        status: 'Operational',
+        availability: 0,
+        setupTime: '',
+        lastMaintenance: new Date().toISOString().split('T')[0],
+        nextMaintenance: new Date().toISOString().split('T')[0],
+        category: '',
+        compatibleParts: [],
+      });
     }
   }, [machine]);
 
-  const handleChange = (field: keyof Machine, value: string | number) => {
+  const handleChange = (field: keyof Machine, value: string | number | number[]) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -42,7 +57,19 @@ const MachineEditModal = ({ machine, open, onClose, onSave }: MachineEditModalPr
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSave(formData);
-    toast.success('Machine updated successfully');
+    toast.success(machine ? 'Machine updated successfully' : 'Machine added successfully');
+  };
+
+  // Split comma-separated part IDs into an array of numbers
+  const handleCompatiblePartsChange = (value: string) => {
+    const partIds = value
+      .split(',')
+      .map(id => id.trim())
+      .filter(id => id !== '')
+      .map(id => parseInt(id, 10))
+      .filter(id => !isNaN(id));
+    
+    handleChange('compatibleParts', partIds);
   };
 
   return (
@@ -129,6 +156,30 @@ const MachineEditModal = ({ machine, open, onClose, onSave }: MachineEditModalPr
                 value={formData.nextMaintenance}
                 onChange={(e) => handleChange('nextMaintenance', e.target.value)}
                 className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="category" className="text-right">
+                Category
+              </Label>
+              <Input
+                id="category"
+                value={formData.category || ''}
+                onChange={(e) => handleChange('category', e.target.value)}
+                className="col-span-3"
+                placeholder="e.g. CNC, Assembly, Inspection"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="compatibleParts" className="text-right">
+                Compatible Parts
+              </Label>
+              <Input
+                id="compatibleParts"
+                value={formData.compatibleParts?.join(', ') || ''}
+                onChange={(e) => handleCompatiblePartsChange(e.target.value)}
+                className="col-span-3"
+                placeholder="Enter part IDs separated by commas"
               />
             </div>
           </div>

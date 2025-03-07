@@ -7,4 +7,6 @@ export interface Machine {
   setupTime: string;
   lastMaintenance: string;
   nextMaintenance: string;
+  category?: string;
+  compatibleParts?: number[];
 }

@@ -1,10 +1,9 @@
-
 import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { AlertTriangle, CheckCircle, PlusCircle } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Layers, PlusCircle } from 'lucide-react';
 import { Machine } from '@/types/machine';
 import MachineCard from '@/components/machines/MachineCard';
 import MachineEditModal from '@/components/machines/MachineEditModal';
@@ -61,10 +60,11 @@ const MachinesPage = () => {
       <div className="flex justify-between items-center mb-6">
         <Tabs defaultValue="overview" className="w-full">
           <div className="flex justify-between items-center">
-            <TabsList className="grid w-[400px] grid-cols-3 animate-fade-in">
+            <TabsList className="grid w-[500px] grid-cols-4 animate-fade-in">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="planning">Planning</TabsTrigger>
               <TabsTrigger value="maintenance">Maintenance</TabsTrigger>
+              <TabsTrigger value="advanced">Advanced</TabsTrigger>
             </TabsList>
             <Button onClick={handleAddNewMachine} className="ml-auto">
               <PlusCircle className="mr-2 h-4 w-4" /> Add Machine
@@ -158,6 +158,52 @@ const MachinesPage = () => {
                             <h3 className="font-medium">{machine.name}</h3>
                             <p className="text-sm text-muted-foreground">
                               Next scheduled: {machine.nextMaintenance}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button variant="outline" size="sm" onClick={() => handleEditMachine(machine)}>
+                            Edit
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-8 text-center">
+                    <p className="text-muted-foreground">No machines added yet.</p>
+                    <Button onClick={handleAddNewMachine} className="mt-4">
+                      <PlusCircle className="mr-2 h-4 w-4" /> Add Your First Machine
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="advanced" className="animate-slide-up">
+            <Card>
+              <CardHeader>
+                <CardTitle>Machine Categories & Compatibility</CardTitle>
+                <CardDescription>Configure machine interchangeability and parts compatibility</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {machines.length > 0 ? (
+                  <div className="space-y-4">
+                    {machines.map((machine) => (
+                      <div 
+                        key={`adv-${machine.id}`}
+                        className="p-4 border rounded-lg flex justify-between items-center"
+                      >
+                        <div className="flex items-center">
+                          <div className="h-10 w-10 rounded-full mr-4 flex items-center justify-center bg-blue-100 text-blue-600">
+                            <Layers className="h-5 w-5" />
+                          </div>
+                          <div>
+                            <h3 className="font-medium">{machine.name}</h3>
+                            <p className="text-sm text-muted-foreground">
+                              Category: {machine.category || 'Not set'} | 
+                              Compatible parts: {machine.compatibleParts?.length || 0}
                             </p>
                           </div>
                         </div>
