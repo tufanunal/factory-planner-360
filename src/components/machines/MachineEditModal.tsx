@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -8,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 import { Machine } from '@/types/machine';
 import { DEFAULT_CATEGORY } from './CategoryManager';
+import { useData } from '@/contexts/DataContext';
 
 interface MachineEditModalProps {
   machine: Machine | null;
@@ -17,7 +17,16 @@ interface MachineEditModalProps {
   categories?: string[];
 }
 
-const MachineEditModal = ({ machine, open, onClose, onSave, categories = [DEFAULT_CATEGORY] }: MachineEditModalProps) => {
+const MachineEditModal = ({ 
+  machine, 
+  open, 
+  onClose, 
+  onSave, 
+  categories: propCategories 
+}: MachineEditModalProps) => {
+  const { machineCategories } = useData();
+  const categories = propCategories || machineCategories || [DEFAULT_CATEGORY];
+
   const [formData, setFormData] = useState<Machine>({
     id: 0,
     name: '',
@@ -37,7 +46,6 @@ const MachineEditModal = ({ machine, open, onClose, onSave, categories = [DEFAUL
         category: machine.category || DEFAULT_CATEGORY
       });
     } else {
-      // Reset form for new machine
       setFormData({
         id: 0,
         name: '',
@@ -65,7 +73,6 @@ const MachineEditModal = ({ machine, open, onClose, onSave, categories = [DEFAUL
     toast.success(machine ? 'Machine updated successfully' : 'Machine added successfully');
   };
 
-  // Split comma-separated part IDs into an array of numbers
   const handleCompatiblePartsChange = (value: string) => {
     const partIds = value
       .split(',')

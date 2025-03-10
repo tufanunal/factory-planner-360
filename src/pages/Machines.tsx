@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -10,26 +9,13 @@ import MachineCard from '@/components/machines/MachineCard';
 import MachineEditModal from '@/components/machines/MachineEditModal';
 import CategoryManager, { DEFAULT_CATEGORY } from '@/components/machines/CategoryManager';
 import { toast } from 'sonner';
+import { useData } from '@/contexts/DataContext';
 
 const MachinesPage = () => {
-  // Load machines from localStorage or initialize with empty array
-  const [machines, setMachines] = useState<Machine[]>(() => {
-    const savedMachines = localStorage.getItem('machines');
-    return savedMachines ? JSON.parse(savedMachines) : [];
-  });
-
-  const [categories, setCategories] = useState<string[]>(() => {
-    const savedCategories = localStorage.getItem('machineCategories');
-    return savedCategories ? JSON.parse(savedCategories) : [DEFAULT_CATEGORY];
-  });
-
+  const { machines, setMachines, machineCategories, setMachineCategories } = useData();
+  
   const [editingMachine, setEditingMachine] = useState<Machine | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-
-  // Save machines to localStorage whenever they change
-  useEffect(() => {
-    localStorage.setItem('machines', JSON.stringify(machines));
-  }, [machines]);
 
   const handleEditMachine = (machine: Machine) => {
     setEditingMachine(machine);
@@ -43,12 +29,10 @@ const MachinesPage = () => {
 
   const handleSaveMachine = (updatedMachine: Machine) => {
     if (updatedMachine.id) {
-      // Update existing machine
       setMachines(machines.map(machine => 
         machine.id === updatedMachine.id ? updatedMachine : machine
       ));
     } else {
-      // Add new machine
       const newMachine = {
         ...updatedMachine,
         id: Math.max(0, ...machines.map(m => m.id)) + 1
@@ -59,11 +43,9 @@ const MachinesPage = () => {
     setIsModalOpen(false);
   };
 
-  // Handle category changes from the CategoryManager
   const handleCategoryChange = (updatedCategories: string[]) => {
-    setCategories(updatedCategories);
+    setMachineCategories(updatedCategories);
     
-    // Update machines if their category was deleted
     const updatedMachines = machines.map(machine => {
       if (machine.category && !updatedCategories.includes(machine.category)) {
         return { ...machine, category: DEFAULT_CATEGORY };
@@ -267,7 +249,7 @@ const MachinesPage = () => {
         open={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
         onSave={handleSaveMachine}
-        categories={categories} 
+        categories={machineCategories} 
       />
     </DashboardLayout>
   );

@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 import { Part } from '@/types/part';
 import { DEFAULT_CATEGORY } from '@/components/machines/CategoryManager';
+import { useData } from '@/contexts/DataContext';
 
 interface PartEditModalProps {
   part: Part | null;
@@ -17,7 +18,17 @@ interface PartEditModalProps {
   categories?: string[];
 }
 
-const PartEditModal = ({ part, open, onClose, onSave, categories = [DEFAULT_CATEGORY] }: PartEditModalProps) => {
+const PartEditModal = ({ 
+  part, 
+  open, 
+  onClose, 
+  onSave, 
+  categories: propCategories 
+}: PartEditModalProps) => {
+  // Use categories from context or from props as a fallback
+  const { machineCategories } = useData();
+  const categories = propCategories || machineCategories || [DEFAULT_CATEGORY];
+
   const [formData, setFormData] = useState<Part>({
     id: 0,
     sku: '',

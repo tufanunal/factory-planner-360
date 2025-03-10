@@ -1,11 +1,11 @@
-
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PlusCircle, Pencil, Trash2, Save, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
+import { useData } from '@/contexts/DataContext';
 
 // Default category that cannot be deleted
 export const DEFAULT_CATEGORY = 'Uncategorized';
@@ -16,22 +16,12 @@ interface CategoryManagerProps {
 }
 
 const CategoryManager = ({ onCategoryChange, machines }: CategoryManagerProps) => {
-  const [categories, setCategories] = useState<string[]>(() => {
-    const savedCategories = localStorage.getItem('machineCategories');
-    return savedCategories 
-      ? JSON.parse(savedCategories) 
-      : [DEFAULT_CATEGORY];
-  });
+  // We still keep the prop-based function to maintain backward compatibility
+  const { machineCategories } = useData();
   
   const [newCategory, setNewCategory] = useState('');
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editValue, setEditValue] = useState('');
-
-  // Save categories to localStorage whenever they change
-  useEffect(() => {
-    localStorage.setItem('machineCategories', JSON.stringify(categories));
-    onCategoryChange(categories);
-  }, [categories, onCategoryChange]);
 
   const handleAddCategory = () => {
     if (!newCategory.trim()) {
@@ -39,23 +29,24 @@ const CategoryManager = ({ onCategoryChange, machines }: CategoryManagerProps) =
       return;
     }
     
-    if (categories.includes(newCategory)) {
+    if (machineCategories.includes(newCategory)) {
       toast.error('Category already exists');
       return;
     }
     
-    setCategories([...categories, newCategory]);
+    const updatedCategories = [...machineCategories, newCategory];
+    onCategoryChange(updatedCategories);
     setNewCategory('');
     toast.success('Category added successfully');
   };
 
   const startEditing = (index: number) => {
-    if (categories[index] === DEFAULT_CATEGORY) {
+    if (machineCategories[index] === DEFAULT_CATEGORY) {
       toast.error('Cannot edit the default category');
       return;
     }
     setEditingIndex(index);
-    setEditValue(categories[index]);
+    setEditValue(machineCategories[index]);
   };
 
   const cancelEditing = () => {
@@ -69,28 +60,28 @@ const CategoryManager = ({ onCategoryChange, machines }: CategoryManagerProps) =
       return;
     }
     
-    if (categories.includes(editValue) && editValue !== categories[index]) {
+    if (machineCategories.includes(editValue) && editValue !== machineCategories[index]) {
       toast.error('Category already exists');
       return;
     }
     
-    const updatedCategories = [...categories];
+    const updatedCategories = [...machineCategories];
     updatedCategories[index] = editValue;
-    setCategories(updatedCategories);
+    onCategoryChange(updatedCategories);
     setEditingIndex(null);
     setEditValue('');
     toast.success('Category updated successfully');
   };
 
   const handleDeleteCategory = (index: number) => {
-    if (categories[index] === DEFAULT_CATEGORY) {
+    if (machineCategories[index] === DEFAULT_CATEGORY) {
       toast.error('Cannot delete the default category');
       return;
     }
     
-    const categoryToDelete = categories[index];
-    const updatedCategories = categories.filter((_, i) => i !== index);
-    setCategories(updatedCategories);
+    const categoryToDelete = machineCategories[index];
+    const updatedCategories = machineCategories.filter((_, i) => i !== index);
+    onCategoryChange(updatedCategories);
     
     // Check if any machines use this category and revert them to default
     const machinesUsingCategory = machines.filter(
@@ -123,7 +114,7 @@ const CategoryManager = ({ onCategoryChange, machines }: CategoryManagerProps) =
           </div>
           
           <div className="space-y-2">
-            {categories.map((category, index) => (
+            {machineCategories.map((category, index) => (
               <div 
                 key={index} 
                 className="flex items-center justify-between p-2 border rounded-md"
