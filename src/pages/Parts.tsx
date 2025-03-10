@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,7 +20,9 @@ const initialPartsData: Part[] = [
     category: 'Structural',
     qualityRate: 99.7,
     stock: 152,
-    status: 'Active'
+    status: 'Active',
+    consumables: [],
+    rawMaterials: []
   },
   { 
     id: 2, 
@@ -28,7 +31,9 @@ const initialPartsData: Part[] = [
     category: 'Mechanical',
     qualityRate: 99.9,
     stock: 543,
-    status: 'Active'
+    status: 'Active',
+    consumables: [],
+    rawMaterials: []
   },
   { 
     id: 3, 
@@ -37,7 +42,9 @@ const initialPartsData: Part[] = [
     category: 'Electronic',
     qualityRate: 98.5,
     stock: 28,
-    status: 'Low Stock'
+    status: 'Low Stock',
+    consumables: [],
+    rawMaterials: []
   },
   { 
     id: 4, 
@@ -46,7 +53,9 @@ const initialPartsData: Part[] = [
     category: 'Enclosures',
     qualityRate: 99.2,
     stock: 205,
-    status: 'Active'
+    status: 'Active',
+    consumables: [],
+    rawMaterials: []
   },
   { 
     id: 5, 
@@ -55,7 +64,9 @@ const initialPartsData: Part[] = [
     category: 'Electronic',
     qualityRate: 99.0,
     stock: 15,
-    status: 'Low Stock'
+    status: 'Low Stock',
+    consumables: [],
+    rawMaterials: []
   },
   { 
     id: 6, 
@@ -64,7 +75,9 @@ const initialPartsData: Part[] = [
     category: 'Interface',
     qualityRate: 99.8,
     stock: 0,
-    status: 'Discontinued'
+    status: 'Discontinued',
+    consumables: [],
+    rawMaterials: []
   },
 ];
 
