@@ -7,4 +7,12 @@ export interface Part {
   qualityRate: number;
   stock: number;
   status: 'Active' | 'Low Stock' | 'Discontinued';
+  consumables: {
+    consumableId: number;
+    amount: number;
+  }[];
+  rawMaterials: {
+    rawMaterialId: number;
+    amount: number;
+  }[];
 }

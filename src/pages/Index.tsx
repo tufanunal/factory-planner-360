@@ -6,7 +6,8 @@ import {
   BarChart3, 
   Package, 
   TrendingUp, 
-  Calculator 
+  Calculator,
+  Layers
 } from 'lucide-react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import ModuleCard from '@/components/ui/ModuleCard';
@@ -47,6 +48,13 @@ const Index = () => {
       icon: <Package size={24} />,
       path: '/consumables',
       metric: { value: '24', label: 'Types Tracked' }
+    },
+    {
+      title: 'Raw Materials',
+      description: 'Manage raw materials used in production',
+      icon: <Layers size={24} />,
+      path: '/raw-materials',
+      metric: { value: '12', label: 'Materials' }
     },
     {
       title: 'Forecast',

@@ -2,6 +2,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Machine } from '@/types/machine';
 import { Part } from '@/types/part';
+import { Consumable } from '@/types/consumable';
+import { RawMaterial } from '@/types/rawMaterial';
 import { DEFAULT_CATEGORY } from '@/components/machines/CategoryManager';
 
 interface DataContextType {
@@ -18,9 +20,23 @@ interface DataContextType {
   setMachineCategories: React.Dispatch<React.SetStateAction<string[]>>;
   partCategories: string[];
   setPartCategories: React.Dispatch<React.SetStateAction<string[]>>;
+
+  // Units
+  units: string[];
+  setUnits: React.Dispatch<React.SetStateAction<string[]>>;
+
+  // Consumables
+  consumables: Consumable[];
+  setConsumables: React.Dispatch<React.SetStateAction<Consumable[]>>;
+
+  // Raw Materials
+  rawMaterials: RawMaterial[];
+  setRawMaterials: React.Dispatch<React.SetStateAction<RawMaterial[]>>;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
+
+const DEFAULT_UNITS = ['kg', 'pcs', 'liter', 'meter'];
 
 export function DataProvider({ children }: { children: React.ReactNode }) {
   // Initialize machines state
@@ -67,6 +83,39 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     }
   });
 
+  // Initialize units
+  const [units, setUnits] = useState<string[]>(() => {
+    try {
+      const savedUnits = localStorage.getItem('units');
+      return savedUnits ? JSON.parse(savedUnits) : DEFAULT_UNITS;
+    } catch (error) {
+      console.error('Error loading units from localStorage:', error);
+      return DEFAULT_UNITS;
+    }
+  });
+
+  // Initialize consumables
+  const [consumables, setConsumables] = useState<Consumable[]>(() => {
+    try {
+      const savedConsumables = localStorage.getItem('consumables');
+      return savedConsumables ? JSON.parse(savedConsumables) : [];
+    } catch (error) {
+      console.error('Error loading consumables from localStorage:', error);
+      return [];
+    }
+  });
+
+  // Initialize raw materials
+  const [rawMaterials, setRawMaterials] = useState<RawMaterial[]>(() => {
+    try {
+      const savedRawMaterials = localStorage.getItem('rawMaterials');
+      return savedRawMaterials ? JSON.parse(savedRawMaterials) : [];
+    } catch (error) {
+      console.error('Error loading raw materials from localStorage:', error);
+      return [];
+    }
+  });
+
   // Save machines to localStorage whenever they change
   useEffect(() => {
     localStorage.setItem('machines', JSON.stringify(machines));
@@ -87,6 +136,21 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('partCategories', JSON.stringify(partCategories));
   }, [partCategories]);
 
+  // Save units to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('units', JSON.stringify(units));
+  }, [units]);
+
+  // Save consumables to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('consumables', JSON.stringify(consumables));
+  }, [consumables]);
+
+  // Save raw materials to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('rawMaterials', JSON.stringify(rawMaterials));
+  }, [rawMaterials]);
+
   const value = {
     machines,
     setMachines,
@@ -95,7 +159,13 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     machineCategories,
     setMachineCategories,
     partCategories,
-    setPartCategories
+    setPartCategories,
+    units,
+    setUnits,
+    consumables,
+    setConsumables,
+    rawMaterials,
+    setRawMaterials
   };
 
   return (

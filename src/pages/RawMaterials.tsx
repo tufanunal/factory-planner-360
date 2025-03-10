@@ -5,101 +5,101 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Package, Search, Filter, Plus, Trash2, Pencil } from 'lucide-react';
+import { Box, Search, Filter, Plus, Trash2, Pencil } from 'lucide-react';
 import { useData } from '@/contexts/DataContext';
-import { Consumable } from '@/types/consumable';
+import { RawMaterial } from '@/types/rawMaterial';
 import UnitManager from '@/components/common/UnitManager';
-import ConsumableEditModal from '@/components/consumables/ConsumableEditModal';
+import RawMaterialEditModal from '@/components/rawMaterials/RawMaterialEditModal';
 import { toast } from 'sonner';
 
-const initialConsumablesData: Consumable[] = [
+const initialRawMaterialsData: RawMaterial[] = [
   { 
     id: 1, 
-    name: 'Machine Oil', 
-    unit: 'liter',
-    stock: 150,
-    costPerUnit: 12.5
+    name: 'Aluminum', 
+    unit: 'kg',
+    stock: 500,
+    costPerUnit: 5.25
   },
   { 
     id: 2, 
-    name: 'Lubricant', 
+    name: 'Steel', 
     unit: 'kg',
-    stock: 75,
-    costPerUnit: 28.99
+    stock: 850,
+    costPerUnit: 3.75
   },
   { 
     id: 3, 
-    name: 'Cleaning Solution', 
-    unit: 'liter',
-    stock: 95,
-    costPerUnit: 8.75
+    name: 'Plastic Granules', 
+    unit: 'kg',
+    stock: 300,
+    costPerUnit: 2.50
   },
   { 
     id: 4, 
-    name: 'Sealing Tape', 
+    name: 'Copper Wire', 
     unit: 'meter',
-    stock: 500,
-    costPerUnit: 0.45
+    stock: 1200,
+    costPerUnit: 1.80
   }
 ];
 
-const ConsumablesPage = () => {
-  const { consumables, setConsumables, units } = useData();
+const RawMaterialsPage = () => {
+  const { rawMaterials, setRawMaterials, units } = useData();
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedConsumable, setSelectedConsumable] = useState<Consumable | null>(null);
+  const [selectedRawMaterial, setSelectedRawMaterial] = useState<RawMaterial | null>(null);
 
-  const filteredConsumables = consumables.filter(consumable => 
-    consumable.name.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredRawMaterials = rawMaterials.filter(rawMaterial => 
+    rawMaterial.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleOpenModal = (consumable: Consumable | null = null) => {
-    setSelectedConsumable(consumable);
+  const handleOpenModal = (rawMaterial: RawMaterial | null = null) => {
+    setSelectedRawMaterial(rawMaterial);
     setIsModalOpen(true);
   };
 
   const handleCloseModal = () => {
-    setSelectedConsumable(null);
+    setSelectedRawMaterial(null);
     setIsModalOpen(false);
   };
 
-  const handleSaveConsumable = (consumable: Consumable) => {
-    if (consumable.id === 0) {
-      const newConsumable = {
-        ...consumable,
-        id: Math.max(0, ...consumables.map(c => c.id)) + 1
+  const handleSaveRawMaterial = (rawMaterial: RawMaterial) => {
+    if (rawMaterial.id === 0) {
+      const newRawMaterial = {
+        ...rawMaterial,
+        id: Math.max(0, ...rawMaterials.map(m => m.id)) + 1
       };
-      setConsumables([...consumables, newConsumable]);
+      setRawMaterials([...rawMaterials, newRawMaterial]);
     } else {
-      setConsumables(consumables.map(c => c.id === consumable.id ? consumable : c));
+      setRawMaterials(rawMaterials.map(m => m.id === rawMaterial.id ? rawMaterial : m));
     }
     handleCloseModal();
   };
 
-  const handleDeleteConsumable = (consumableId: number) => {
-    setConsumables(consumables.filter(c => c.id !== consumableId));
-    toast.success("Consumable removed successfully");
+  const handleDeleteRawMaterial = (rawMaterialId: number) => {
+    setRawMaterials(rawMaterials.filter(m => m.id !== rawMaterialId));
+    toast.success("Raw material removed successfully");
   };
 
   const handleResetData = () => {
-    setConsumables(initialConsumablesData);
-    toast.success("Consumables data has been reset to default");
+    setRawMaterials(initialRawMaterialsData);
+    toast.success("Raw materials data has been reset to default");
   };
 
   return (
     <DashboardLayout 
-      title="Consumables" 
-      description="Manage and track consumables for production"
+      title="Raw Materials" 
+      description="Manage and track raw materials for production"
     >
       <div className="space-y-6">
         <Card className="animate-slide-up">
           <CardHeader>
             <CardTitle className="flex items-center">
-              <Package className="mr-2 h-5 w-5" />
-              Consumables Manager
+              <Box className="mr-2 h-5 w-5" />
+              Raw Materials Manager
             </CardTitle>
             <CardDescription>
-              Track and manage all consumables used in production
+              Track and manage all raw materials used in production
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -107,7 +107,7 @@ const ConsumablesPage = () => {
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search consumables by name..."
+                  placeholder="Search raw materials by name..."
                   className="pl-9"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -119,7 +119,7 @@ const ConsumablesPage = () => {
                 onClick={() => handleOpenModal()}
               >
                 <Plus className="mr-2 h-4 w-4" />
-                Add Consumable
+                Add Raw Material
               </Button>
               <Button variant="outline" className="flex items-center">
                 <Filter className="mr-2 h-4 w-4" />
@@ -137,7 +137,7 @@ const ConsumablesPage = () => {
             
             <div className="rounded-md border">
               <div className="grid grid-cols-7 py-3 px-4 bg-muted/50 text-sm font-medium">
-                <div className="col-span-2">Consumable</div>
+                <div className="col-span-2">Raw Material</div>
                 <div className="col-span-1">Unit</div>
                 <div className="col-span-1 text-right">Cost/Unit</div>
                 <div className="col-span-1 text-right">Stock</div>
@@ -146,37 +146,37 @@ const ConsumablesPage = () => {
               </div>
               
               <div className="divide-y">
-                {filteredConsumables.length > 0 ? (
-                  filteredConsumables.map((consumable) => (
-                    <div key={consumable.id} className="grid grid-cols-7 py-3 px-4 items-center">
+                {filteredRawMaterials.length > 0 ? (
+                  filteredRawMaterials.map((rawMaterial) => (
+                    <div key={rawMaterial.id} className="grid grid-cols-7 py-3 px-4 items-center">
                       <div className="col-span-2">
-                        <div className="font-medium">{consumable.name}</div>
+                        <div className="font-medium">{rawMaterial.name}</div>
                       </div>
                       <div className="col-span-1">
-                        <Badge variant="outline">{consumable.unit}</Badge>
+                        <Badge variant="outline">{rawMaterial.unit}</Badge>
                       </div>
                       <div className="col-span-1 text-right">
-                        ${consumable.costPerUnit.toFixed(2)}
+                        ${rawMaterial.costPerUnit.toFixed(2)}
                       </div>
                       <div className="col-span-1 text-right font-medium">
-                        {consumable.stock} {consumable.unit}
+                        {rawMaterial.stock} {rawMaterial.unit}
                       </div>
                       <div className="col-span-1 text-right font-medium">
-                        ${(consumable.costPerUnit * consumable.stock).toFixed(2)}
+                        ${(rawMaterial.costPerUnit * rawMaterial.stock).toFixed(2)}
                       </div>
                       <div className="col-span-1 text-right">
                         <div className="flex justify-end gap-2">
                           <Button 
                             variant="ghost" 
                             size="icon"
-                            onClick={() => handleOpenModal(consumable)}
+                            onClick={() => handleOpenModal(rawMaterial)}
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
                           <Button 
                             variant="ghost" 
                             size="icon"
-                            onClick={() => handleDeleteConsumable(consumable.id)}
+                            onClick={() => handleDeleteRawMaterial(rawMaterial.id)}
                           >
                             <Trash2 className="h-4 w-4 text-red-500" />
                           </Button>
@@ -186,28 +186,28 @@ const ConsumablesPage = () => {
                   ))
                 ) : (
                   <div className="py-8 text-center text-muted-foreground">
-                    No consumables found matching your search.
+                    No raw materials found matching your search.
                   </div>
                 )}
               </div>
             </div>
             
             <div className="flex justify-between items-center mt-4 text-sm text-muted-foreground">
-              <div>Showing {filteredConsumables.length} of {consumables.length} consumables</div>
+              <div>Showing {filteredRawMaterials.length} of {rawMaterials.length} raw materials</div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      <ConsumableEditModal
-        consumable={selectedConsumable}
+      <RawMaterialEditModal
+        rawMaterial={selectedRawMaterial}
         open={isModalOpen}
         onClose={handleCloseModal}
-        onSave={handleSaveConsumable}
+        onSave={handleSaveRawMaterial}
         units={units}
       />
     </DashboardLayout>
   );
 };
 
-export default ConsumablesPage;
+export default RawMaterialsPage;
