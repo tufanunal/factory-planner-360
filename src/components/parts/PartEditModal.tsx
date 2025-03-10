@@ -7,20 +7,22 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { Part } from '@/types/part';
+import { DEFAULT_CATEGORY } from '@/components/machines/CategoryManager';
 
 interface PartEditModalProps {
   part: Part | null;
   open: boolean;
   onClose: () => void;
   onSave: (part: Part) => void;
+  categories?: string[];
 }
 
-const PartEditModal = ({ part, open, onClose, onSave }: PartEditModalProps) => {
+const PartEditModal = ({ part, open, onClose, onSave, categories = [DEFAULT_CATEGORY] }: PartEditModalProps) => {
   const [formData, setFormData] = useState<Part>({
     id: 0,
     sku: '',
     name: '',
-    category: '',
+    category: DEFAULT_CATEGORY,
     qualityRate: 99.0,
     stock: 0,
     status: 'Active',
@@ -28,7 +30,21 @@ const PartEditModal = ({ part, open, onClose, onSave }: PartEditModalProps) => {
 
   useEffect(() => {
     if (part) {
-      setFormData(part);
+      setFormData({
+        ...part,
+        category: part.category || DEFAULT_CATEGORY
+      });
+    } else {
+      // Reset form for new part
+      setFormData({
+        id: 0,
+        sku: '',
+        name: '',
+        category: DEFAULT_CATEGORY,
+        qualityRate: 99.0,
+        stock: 0,
+        status: 'Active',
+      });
     }
   }, [part]);
 
@@ -79,12 +95,19 @@ const PartEditModal = ({ part, open, onClose, onSave }: PartEditModalProps) => {
               <Label htmlFor="category" className="text-right">
                 Category
               </Label>
-              <Input
-                id="category"
-                value={formData.category}
-                onChange={(e) => handleChange('category', e.target.value)}
-                className="col-span-3"
-              />
+              <Select 
+                value={formData.category} 
+                onValueChange={(value) => handleChange('category', value)}
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map((category) => (
+                    <SelectItem key={category} value={category}>{category}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="status" className="text-right">

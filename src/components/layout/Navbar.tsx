@@ -10,8 +10,11 @@ import {
   Package, 
   TrendingUp, 
   Calculator, 
-  Home
+  Home,
+  SunMoon
 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useTheme } from '@/hooks/use-theme';
 
 type NavItem = {
   name: string;
@@ -33,6 +36,7 @@ const navItems: NavItem[] = [
 const Navbar = () => {
   const location = useLocation();
   const [scrolled, setScrolled] = useState(false);
+  const { theme, setTheme } = useTheme();
   
   // Track scroll position for navbar styling
   useEffect(() => {
@@ -44,11 +48,15 @@ const Navbar = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  const toggleTheme = () => {
+    setTheme(theme === 'light' ? 'dark' : 'light');
+  };
+
   return (
     <nav 
       className={cn(
         "fixed top-0 left-0 right-0 z-50 transition-all duration-300 ease-in-out px-8 py-4",
-        scrolled ? "bg-white/80 shadow-sm backdrop-blur-lg" : "bg-transparent"
+        scrolled ? "bg-background/80 shadow-sm backdrop-blur-lg" : "bg-transparent"
       )}
     >
       <div className="max-w-7xl mx-auto flex justify-between items-center">
@@ -75,6 +83,18 @@ const Navbar = () => {
               </li>
             ))}
           </ul>
+        </div>
+        
+        <div className="flex items-center">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={toggleTheme}
+            className="ml-2 rounded-full"
+            aria-label="Toggle theme"
+          >
+            <SunMoon className="h-5 w-5" />
+          </Button>
         </div>
         
         <div className="lg:hidden">

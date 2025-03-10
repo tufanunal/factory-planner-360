@@ -9,6 +9,7 @@ import { Part } from '@/types/part';
 import PartCard from '@/components/parts/PartCard';
 import PartEditModal from '@/components/parts/PartEditModal';
 import { toast } from 'sonner';
+import { DEFAULT_CATEGORY } from '@/components/machines/CategoryManager';
 
 const initialPartsData: Part[] = [
   { 
@@ -76,6 +77,23 @@ const PartsPage = () => {
     const savedParts = localStorage.getItem('parts');
     return savedParts ? JSON.parse(savedParts) : initialPartsData;
   });
+  
+  const [categories, setCategories] = useState<string[]>(() => {
+    const savedCategories = localStorage.getItem('machineCategories');
+    return savedCategories ? JSON.parse(savedCategories) : [DEFAULT_CATEGORY];
+  });
+  
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const savedCategories = localStorage.getItem('machineCategories');
+      if (savedCategories) {
+        setCategories(JSON.parse(savedCategories));
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
   
   useEffect(() => {
     localStorage.setItem('parts', JSON.stringify(parts));
@@ -299,8 +317,9 @@ const PartsPage = () => {
       <PartEditModal
         part={selectedPart}
         open={isModalOpen}
-        onClose={handleCloseModal}
+        onClose={() => setIsModalOpen(false)}
         onSave={handleSavePart}
+        categories={categories}
       />
     </DashboardLayout>
   );
