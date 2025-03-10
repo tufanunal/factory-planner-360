@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,7 +10,6 @@ import { Part } from '@/types/part';
 import PartCard from '@/components/parts/PartCard';
 import PartEditModal from '@/components/parts/PartEditModal';
 import { toast } from 'sonner';
-import { DEFAULT_CATEGORY } from '@/components/machines/CategoryManager';
 import { useData } from '@/contexts/DataContext';
 
 const PartsPage = () => {
@@ -66,12 +66,6 @@ const PartsPage = () => {
     toast.success("Part removed successfully");
   };
 
-  const handleResetData = () => {
-    localStorage.removeItem('parts');
-    window.location.reload();
-    toast.success("Parts data has been reset to default");
-  };
-
   return (
     <DashboardLayout 
       title="Parts" 
@@ -110,13 +104,6 @@ const PartsPage = () => {
               <Button variant="outline" className="flex items-center">
                 <Filter className="mr-2 h-4 w-4" />
                 Filters
-              </Button>
-              <Button 
-                variant="outline" 
-                className="flex items-center text-red-500"
-                onClick={handleResetData}
-              >
-                Reset Data
               </Button>
             </div>
             
@@ -238,7 +225,7 @@ const PartsPage = () => {
       <PartEditModal
         part={selectedPart}
         open={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={handleCloseModal}
         onSave={handleSavePart}
         categories={partCategories}
       />

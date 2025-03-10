@@ -38,76 +38,6 @@ const DataContext = createContext<DataContextType | undefined>(undefined);
 
 const DEFAULT_UNITS = ['kg', 'pcs', 'liter', 'meter'];
 
-// Initial default data for parts
-const DEFAULT_PARTS: Part[] = [
-  { 
-    id: 1, 
-    sku: 'P-1001', 
-    name: 'Aluminum Frame',
-    category: 'Structural',
-    qualityRate: 99.7,
-    stock: 152,
-    status: 'Active',
-    consumables: [],
-    rawMaterials: []
-  },
-  { 
-    id: 2, 
-    sku: 'P-1002', 
-    name: 'Steel Bearing',
-    category: 'Mechanical',
-    qualityRate: 99.9,
-    stock: 543,
-    status: 'Active',
-    consumables: [],
-    rawMaterials: []
-  },
-  { 
-    id: 3, 
-    sku: 'P-1003', 
-    name: 'Circuit Board',
-    category: 'Electronic',
-    qualityRate: 98.5,
-    stock: 28,
-    status: 'Low Stock',
-    consumables: [],
-    rawMaterials: []
-  },
-  { 
-    id: 4, 
-    sku: 'P-1004', 
-    name: 'Plastic Housing',
-    category: 'Enclosures',
-    qualityRate: 99.2,
-    stock: 205,
-    status: 'Active',
-    consumables: [],
-    rawMaterials: []
-  },
-  { 
-    id: 5, 
-    sku: 'P-1005', 
-    name: 'Power Supply',
-    category: 'Electronic',
-    qualityRate: 99.0,
-    stock: 15,
-    status: 'Low Stock',
-    consumables: [],
-    rawMaterials: []
-  },
-  { 
-    id: 6, 
-    sku: 'P-1006', 
-    name: 'Control Panel',
-    category: 'Interface',
-    qualityRate: 99.8,
-    stock: 0,
-    status: 'Discontinued',
-    consumables: [],
-    rawMaterials: []
-  },
-];
-
 export function DataProvider({ children }: { children: React.ReactNode }) {
   // Initialize machines state
   const [machines, setMachines] = useState<Machine[]>(() => {
@@ -120,14 +50,14 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     }
   });
 
-  // Initialize parts state with default data
+  // Initialize parts state - no default data
   const [parts, setParts] = useState<Part[]>(() => {
     try {
       const savedParts = localStorage.getItem('parts');
-      return savedParts ? JSON.parse(savedParts) : DEFAULT_PARTS;
+      return savedParts ? JSON.parse(savedParts) : [];
     } catch (error) {
       console.error('Error loading parts from localStorage:', error);
-      return DEFAULT_PARTS;
+      return [];
     }
   });
 
@@ -214,25 +144,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     localStorage.setItem('rawMaterials', JSON.stringify(rawMaterials));
   }, [rawMaterials]);
-
-  // Initialize localStorage with default values if not already set
-  useEffect(() => {
-    if (!localStorage.getItem('parts')) {
-      localStorage.setItem('parts', JSON.stringify(DEFAULT_PARTS));
-    }
-    
-    if (!localStorage.getItem('units')) {
-      localStorage.setItem('units', JSON.stringify(DEFAULT_UNITS));
-    }
-    
-    if (!localStorage.getItem('machineCategories') && machineCategories.length > 0) {
-      localStorage.setItem('machineCategories', JSON.stringify(machineCategories));
-    }
-    
-    if (!localStorage.getItem('partCategories') && partCategories.length > 0) {
-      localStorage.setItem('partCategories', JSON.stringify(partCategories));
-    }
-  }, []);
 
   const value = {
     machines,
