@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -11,106 +10,14 @@ import PartCard from '@/components/parts/PartCard';
 import PartEditModal from '@/components/parts/PartEditModal';
 import { toast } from 'sonner';
 import { DEFAULT_CATEGORY } from '@/components/machines/CategoryManager';
-
-const initialPartsData: Part[] = [
-  { 
-    id: 1, 
-    sku: 'P-1001', 
-    name: 'Aluminum Frame',
-    category: 'Structural',
-    qualityRate: 99.7,
-    stock: 152,
-    status: 'Active',
-    consumables: [],
-    rawMaterials: []
-  },
-  { 
-    id: 2, 
-    sku: 'P-1002', 
-    name: 'Steel Bearing',
-    category: 'Mechanical',
-    qualityRate: 99.9,
-    stock: 543,
-    status: 'Active',
-    consumables: [],
-    rawMaterials: []
-  },
-  { 
-    id: 3, 
-    sku: 'P-1003', 
-    name: 'Circuit Board',
-    category: 'Electronic',
-    qualityRate: 98.5,
-    stock: 28,
-    status: 'Low Stock',
-    consumables: [],
-    rawMaterials: []
-  },
-  { 
-    id: 4, 
-    sku: 'P-1004', 
-    name: 'Plastic Housing',
-    category: 'Enclosures',
-    qualityRate: 99.2,
-    stock: 205,
-    status: 'Active',
-    consumables: [],
-    rawMaterials: []
-  },
-  { 
-    id: 5, 
-    sku: 'P-1005', 
-    name: 'Power Supply',
-    category: 'Electronic',
-    qualityRate: 99.0,
-    stock: 15,
-    status: 'Low Stock',
-    consumables: [],
-    rawMaterials: []
-  },
-  { 
-    id: 6, 
-    sku: 'P-1006', 
-    name: 'Control Panel',
-    category: 'Interface',
-    qualityRate: 99.8,
-    stock: 0,
-    status: 'Discontinued',
-    consumables: [],
-    rawMaterials: []
-  },
-];
+import { useData } from '@/contexts/DataContext';
 
 const PartsPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedPart, setSelectedPart] = useState<Part | null>(null);
   
-  const [parts, setParts] = useState<Part[]>(() => {
-    const savedParts = localStorage.getItem('parts');
-    return savedParts ? JSON.parse(savedParts) : initialPartsData;
-  });
-  
-  const [categories, setCategories] = useState<string[]>(() => {
-    const savedCategories = localStorage.getItem('machineCategories');
-    return savedCategories ? JSON.parse(savedCategories) : [DEFAULT_CATEGORY];
-  });
-  
-  useEffect(() => {
-    const handleStorageChange = () => {
-      const savedCategories = localStorage.getItem('machineCategories');
-      if (savedCategories) {
-        setCategories(JSON.parse(savedCategories));
-      }
-    };
-    
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, []);
-  
-  useEffect(() => {
-    localStorage.setItem('parts', JSON.stringify(parts));
-  }, [parts]);
+  const { parts, setParts, partCategories } = useData();
   
   const filteredParts = parts.filter(part => 
     part.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -160,7 +67,8 @@ const PartsPage = () => {
   };
 
   const handleResetData = () => {
-    setParts(initialPartsData);
+    localStorage.removeItem('parts');
+    window.location.reload();
     toast.success("Parts data has been reset to default");
   };
 
@@ -332,7 +240,7 @@ const PartsPage = () => {
         open={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSave={handleSavePart}
-        categories={categories}
+        categories={partCategories}
       />
     </DashboardLayout>
   );
