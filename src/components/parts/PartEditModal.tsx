@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import {
   Dialog,
@@ -17,7 +16,7 @@ import { toast } from 'sonner';
 import { useData } from '@/contexts/DataContext';
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { X, Plus, Package, Layers } from 'lucide-react';
+import { X, Plus, Package, Layers, Box } from 'lucide-react';
 
 interface PartEditModalProps {
   part: Part | null;
@@ -91,7 +90,6 @@ const PartEditModal = ({
   };
 
   const handleAddConsumable = () => {
-    // Convert to number to ensure proper type checking
     const amount = Number(consumableAmount);
     const conId = Number(consumableId);
     
@@ -100,13 +98,11 @@ const PartEditModal = ({
       return;
     }
 
-    // Check if consumable already exists
     if (editedPart.consumables.some(c => c.consumableId === conId)) {
       toast.error("This consumable is already added to the part");
       return;
     }
 
-    // Add the consumable to the part
     setEditedPart(prev => ({
       ...prev,
       consumables: [
@@ -115,13 +111,11 @@ const PartEditModal = ({
       ]
     }));
 
-    // Reset the form
     setConsumableId("");
     setConsumableAmount(0);
   };
 
   const handleAddRawMaterial = () => {
-    // Convert to number to ensure proper type checking
     const amount = Number(rawMaterialAmount);
     const matId = Number(rawMaterialId);
     
@@ -130,13 +124,11 @@ const PartEditModal = ({
       return;
     }
 
-    // Check if raw material already exists
     if (editedPart.rawMaterials.some(r => r.rawMaterialId === matId)) {
       toast.error("This raw material is already added to the part");
       return;
     }
 
-    // Add the raw material to the part
     setEditedPart(prev => ({
       ...prev,
       rawMaterials: [
@@ -145,7 +137,6 @@ const PartEditModal = ({
       ]
     }));
 
-    // Reset the form
     setRawMaterialId("");
     setRawMaterialAmount(0);
   };
@@ -199,7 +190,6 @@ const PartEditModal = ({
             </TabsTrigger>
           </TabsList>
           
-          {/* Basic details tab */}
           <TabsContent value="details" className="space-y-4">
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="name" className="text-right">
@@ -299,7 +289,6 @@ const PartEditModal = ({
             </div>
           </TabsContent>
           
-          {/* Consumables tab */}
           <TabsContent value="consumables">
             <div className="space-y-4">
               <div className="flex gap-4 items-end">
@@ -362,7 +351,6 @@ const PartEditModal = ({
             </div>
           </TabsContent>
           
-          {/* Raw Materials tab */}
           <TabsContent value="rawMaterials">
             <div className="space-y-4">
               <div className="flex gap-4 items-end">
