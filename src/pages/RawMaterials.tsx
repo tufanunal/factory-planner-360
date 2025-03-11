@@ -113,13 +113,13 @@ const RawMaterialsPage = () => {
                         <Badge variant="outline">{rawMaterial.unit}</Badge>
                       </div>
                       <div className="col-span-1 text-right">
-                        ${rawMaterial.costPerUnit.toFixed(2)}
+                        €{rawMaterial.costPerUnit.toFixed(2)}
                       </div>
                       <div className="col-span-1 text-right font-medium">
                         {rawMaterial.stock} {rawMaterial.unit}
                       </div>
                       <div className="col-span-1 text-right font-medium">
-                        ${(rawMaterial.costPerUnit * rawMaterial.stock).toFixed(2)}
+                        €{(rawMaterial.costPerUnit * rawMaterial.stock).toFixed(2)}
                       </div>
                       <div className="col-span-1 text-right">
                         <div className="flex justify-end gap-2">

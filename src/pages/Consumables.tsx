@@ -113,13 +113,13 @@ const ConsumablesPage = () => {
                         <Badge variant="outline">{consumable.unit}</Badge>
                       </div>
                       <div className="col-span-1 text-right">
-                        ${consumable.costPerUnit.toFixed(2)}
+                        €{consumable.costPerUnit.toFixed(2)}
                       </div>
                       <div className="col-span-1 text-right font-medium">
                         {consumable.stock} {consumable.unit}
                       </div>
                       <div className="col-span-1 text-right font-medium">
-                        ${(consumable.costPerUnit * consumable.stock).toFixed(2)}
+                        €{(consumable.costPerUnit * consumable.stock).toFixed(2)}
                       </div>
                       <div className="col-span-1 text-right">
                         <div className="flex justify-end gap-2">
