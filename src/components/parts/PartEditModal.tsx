@@ -1,423 +1,378 @@
-
 import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, FilterableSelect } from '@/components/ui/select';
-import { toast } from 'sonner';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
 import { Part } from '@/types/part';
-import { DEFAULT_CATEGORY } from '@/components/machines/CategoryManager';
+import { toast } from 'sonner';
 import { useData } from '@/contexts/DataContext';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
-import { X, Plus } from 'lucide-react';
+import { ScrollArea } from "@/components/ui/scroll-area"
 
 interface PartEditModalProps {
   part: Part | null;
   open: boolean;
   onClose: () => void;
   onSave: (part: Part) => void;
-  categories?: string[];
+  categories: string[];
 }
 
-const PartEditModal = ({ 
-  part, 
-  open, 
-  onClose, 
-  onSave, 
-  categories: propCategories 
+const PartEditModal = ({
+  part,
+  open,
+  onClose,
+  onSave,
+  categories,
 }: PartEditModalProps) => {
-  // Use categories from context or from props as a fallback
-  const { partCategories, consumables, rawMaterials } = useData();
-  const categories = propCategories || partCategories || [DEFAULT_CATEGORY];
-
-  const [formData, setFormData] = useState<Part>({
-    id: 0,
-    sku: '',
-    name: '',
-    category: DEFAULT_CATEGORY,
-    qualityRate: 99.0,
-    stock: 0,
-    status: 'Active',
-    consumables: [],
-    rawMaterials: []
-  });
-
-  const [selectedTab, setSelectedTab] = useState('general');
-  const [consumableId, setConsumableId] = useState('');
-  const [consumableAmount, setConsumableAmount] = useState<number | ''>(0);
-  const [rawMaterialId, setRawMaterialId] = useState('');
-  const [rawMaterialAmount, setRawMaterialAmount] = useState<number | ''>(0);
+  const { consumables, rawMaterials } = useData();
+  const [editedPart, setEditedPart] = useState<Part>(
+    part || {
+      id: 0,
+      name: '',
+      sku: '',
+      description: '',
+      category: categories[0] || '',
+      qualityRate: 100,
+      stock: 0,
+      status: 'Active',
+      consumables: [],
+      rawMaterials: []
+    }
+  );
+  const [consumableId, setConsumableId] = useState<string>("");
+  const [consumableAmount, setConsumableAmount] = useState<number>(0);
+  const [rawMaterialId, setRawMaterialId] = useState<string>("");
+  const [rawMaterialAmount, setRawMaterialAmount] = useState<number>(0);
 
   useEffect(() => {
-    if (part) {
-      setFormData({
-        ...part,
-        category: part.category || DEFAULT_CATEGORY,
-        consumables: part.consumables || [],
-        rawMaterials: part.rawMaterials || []
-      });
-    } else {
-      // Reset form for new part
-      setFormData({
+    setEditedPart(
+      part || {
         id: 0,
-        sku: '',
         name: '',
-        category: DEFAULT_CATEGORY,
-        qualityRate: 99.0,
+        sku: '',
+        description: '',
+        category: categories[0] || '',
+        qualityRate: 100,
         stock: 0,
         status: 'Active',
         consumables: [],
         rawMaterials: []
-      });
-    }
-  }, [part]);
+      }
+    );
+  }, [part, categories]);
 
-  const handleChange = (field: keyof Part, value: string | number) => {
-    setFormData(prev => ({
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setEditedPart(prev => ({
       ...prev,
-      [field]: value
+      [name]: value
     }));
   };
 
+  const handleSelectChange = (name: string, value: string) => {
+    setEditedPart(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  // Fix the error with string | number comparison by ensuring numeric types
   const handleAddConsumable = () => {
-    // Fix for TypeScript error: proper type check before comparison
-    if (!consumableId || typeof consumableAmount !== 'number' || consumableAmount <= 0) {
+    const amount = Number(consumableAmount);
+    if (!consumableId || isNaN(amount) || amount <= 0) {
       toast.error("Please select a consumable and specify a valid amount");
       return;
     }
 
-    const conId = parseInt(consumableId);
-    
-    // Check if this consumable is already added
-    if (formData.consumables.some(c => c.consumableId === conId)) {
-      toast.error("This consumable is already added");
-      return;
-    }
+    // Find the selected consumable
+    const selectedConsumable = consumables.find(c => c.id === Number(consumableId));
+    if (!selectedConsumable) return;
 
-    setFormData(prev => ({
+    // Convert ID to number to ensure it's consistent
+    const conId = Number(consumableId);
+
+    // Add the consumable to the part
+    setEditedPart(prev => ({
       ...prev,
       consumables: [
         ...prev.consumables,
-        { consumableId: conId, amount: consumableAmount }
+        { consumableId: conId, amount }
       ]
     }));
 
-    setConsumableId('');
-    setConsumableAmount('');
+    // Reset the form
+    setConsumableId("");
+    setConsumableAmount(0);
+  };
+
+  // Fix the error with string | number comparison by ensuring numeric types
+  const handleAddRawMaterial = () => {
+    const amount = Number(rawMaterialAmount);
+    if (!rawMaterialId || isNaN(amount) || amount <= 0) {
+      toast.error("Please select a raw material and specify a valid amount");
+      return;
+    }
+
+    // Find the selected raw material
+    const selectedRawMaterial = rawMaterials.find(r => r.id === Number(rawMaterialId));
+    if (!selectedRawMaterial) return;
+
+    // Convert ID to number to ensure it's consistent
+    const matId = Number(rawMaterialId);
+
+    // Add the raw material to the part
+    setEditedPart(prev => ({
+      ...prev,
+      rawMaterials: [
+        ...prev.rawMaterials,
+        { rawMaterialId: matId, amount }
+      ]
+    }));
+
+    // Reset the form
+    setRawMaterialId("");
+    setRawMaterialAmount(0);
   };
 
   const handleRemoveConsumable = (consumableId: number) => {
-    setFormData(prev => ({
+    setEditedPart(prev => ({
       ...prev,
       consumables: prev.consumables.filter(c => c.consumableId !== consumableId)
     }));
   };
 
-  const handleAddRawMaterial = () => {
-    // Fix for TypeScript error: proper type check before comparison
-    if (!rawMaterialId || typeof rawMaterialAmount !== 'number' || rawMaterialAmount <= 0) {
-      toast.error("Please select a raw material and specify a valid amount");
-      return;
-    }
-
-    const matId = parseInt(rawMaterialId);
-    
-    // Check if this raw material is already added
-    if (formData.rawMaterials.some(m => m.rawMaterialId === matId)) {
-      toast.error("This raw material is already added");
-      return;
-    }
-
-    setFormData(prev => ({
-      ...prev,
-      rawMaterials: [
-        ...prev.rawMaterials,
-        { rawMaterialId: matId, amount: rawMaterialAmount }
-      ]
-    }));
-
-    setRawMaterialId('');
-    setRawMaterialAmount('');
-  };
-
   const handleRemoveRawMaterial = (rawMaterialId: number) => {
-    setFormData(prev => ({
+    setEditedPart(prev => ({
       ...prev,
-      rawMaterials: prev.rawMaterials.filter(m => m.rawMaterialId !== rawMaterialId)
+      rawMaterials: prev.rawMaterials.filter(r => r.rawMaterialId !== rawMaterialId)
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSave(formData);
-    toast.success(`Part ${part ? 'updated' : 'added'} successfully`);
-  };
+  const handleSave = () => {
+    if (!editedPart.name || !editedPart.sku || !editedPart.category) {
+      toast.error("Please fill in all required fields.");
+      return;
+    }
 
-  const getConsumableName = (id: number) => {
-    const consumable = consumables.find(c => c.id === id);
-    return consumable ? consumable.name : `Consumable ${id}`;
-  };
-
-  const getConsumableUnit = (id: number) => {
-    const consumable = consumables.find(c => c.id === id);
-    return consumable ? consumable.unit : '';
-  };
-
-  const getRawMaterialName = (id: number) => {
-    const material = rawMaterials.find(m => m.id === id);
-    return material ? material.name : `Material ${id}`;
-  };
-
-  const getRawMaterialUnit = (id: number) => {
-    const material = rawMaterials.find(m => m.id === id);
-    return material ? material.unit : '';
+    onSave(editedPart);
   };
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[625px]">
         <DialogHeader>
-          <DialogTitle>{part ? 'Edit Part' : 'Add New Part'}</DialogTitle>
+          <DialogTitle>{part ? 'Edit Part' : 'Add Part'}</DialogTitle>
+          <DialogDescription>
+            {part ? 'Edit part details and save changes.' : 'Create a new part by entering the details below.'}
+          </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit}>
-          <Tabs value={selectedTab} onValueChange={setSelectedTab}>
-            <TabsList className="grid grid-cols-3 mb-4">
-              <TabsTrigger value="general">General</TabsTrigger>
-              <TabsTrigger value="consumables">Consumables</TabsTrigger>
-              <TabsTrigger value="rawMaterials">Raw Materials</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="general">
-              <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="sku" className="text-right">
-                    SKU
-                  </Label>
-                  <Input
-                    id="sku"
-                    value={formData.sku}
-                    onChange={(e) => handleChange('sku', e.target.value)}
-                    className="col-span-3"
-                  />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="name" className="text-right">
-                    Name
-                  </Label>
-                  <Input
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) => handleChange('name', e.target.value)}
-                    className="col-span-3"
-                  />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="category" className="text-right">
-                    Category
-                  </Label>
-                  <FilterableSelect 
-                    value={formData.category} 
-                    onValueChange={(value) => handleChange('category', value)}
-                    triggerClassName="col-span-3"
-                  >
-                    {categories.map((category) => (
-                      <SelectItem key={category} value={category}>{category}</SelectItem>
-                    ))}
-                  </FilterableSelect>
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="status" className="text-right">
-                    Status
-                  </Label>
-                  <Select 
-                    value={formData.status} 
-                    onValueChange={(value: 'Active' | 'Low Stock' | 'Discontinued') => handleChange('status', value)}
-                  >
-                    <SelectTrigger className="col-span-3">
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Active">Active</SelectItem>
-                      <SelectItem value="Low Stock">Low Stock</SelectItem>
-                      <SelectItem value="Discontinued">Discontinued</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="qualityRate" className="text-right">
-                    Quality Rate %
-                  </Label>
-                  <Input
-                    id="qualityRate"
-                    type="number"
-                    min="0"
-                    max="100"
-                    step="0.1"
-                    value={formData.qualityRate || ''}
-                    onChange={(e) => handleChange('qualityRate', parseFloat(e.target.value) || 0)}
-                    className="col-span-3"
-                  />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="stock" className="text-right">
-                    Stock
-                  </Label>
-                  <Input
-                    id="stock"
-                    type="number"
-                    min="0"
-                    value={formData.stock || ''}
-                    onChange={(e) => handleChange('stock', parseInt(e.target.value) || 0)}
-                    className="col-span-3"
-                  />
-                </div>
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="consumables">
-              <div className="space-y-4">
-                <div className="grid grid-cols-12 gap-4">
-                  <div className="col-span-6">
-                    <Label htmlFor="consumable">Consumable</Label>
-                    <FilterableSelect 
-                      value={consumableId} 
-                      onValueChange={setConsumableId}
-                    >
-                      {consumables.map((consumable) => (
-                        <SelectItem key={consumable.id} value={consumable.id.toString()}>
-                          {consumable.name} ({consumable.unit})
-                        </SelectItem>
-                      ))}
-                    </FilterableSelect>
-                  </div>
-                  <div className="col-span-4">
-                    <Label htmlFor="amount">Amount</Label>
-                    <Input
-                      id="amount"
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={consumableAmount === 0 ? '' : consumableAmount}
-                      onChange={(e) => setConsumableAmount(e.target.value === '' ? '' : parseFloat(e.target.value))}
-                    />
-                  </div>
-                  <div className="col-span-2 flex items-end">
-                    <Button 
-                      type="button" 
-                      onClick={handleAddConsumable}
-                      className="w-full"
-                    >
-                      <Plus className="h-4 w-4 mr-1" /> Add
-                    </Button>
-                  </div>
-                </div>
-                
-                <div className="border rounded-md p-4">
-                  <h3 className="font-medium mb-2">Added Consumables</h3>
-                  {formData.consumables.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">No consumables added yet</p>
-                  ) : (
-                    <div className="space-y-2">
-                      {formData.consumables.map((con) => (
-                        <div key={con.consumableId} className="flex justify-between items-center bg-muted/50 p-2 rounded-md">
-                          <div>
-                            <span className="font-medium">{getConsumableName(con.consumableId)}</span>
-                            <Badge variant="outline" className="ml-2">
-                              {con.amount} {getConsumableUnit(con.consumableId)}
-                            </Badge>
-                          </div>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            onClick={() => handleRemoveConsumable(con.consumableId)}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="rawMaterials">
-              <div className="space-y-4">
-                <div className="grid grid-cols-12 gap-4">
-                  <div className="col-span-6">
-                    <Label htmlFor="rawMaterial">Raw Material</Label>
-                    <FilterableSelect 
-                      value={rawMaterialId} 
-                      onValueChange={setRawMaterialId}
-                    >
-                      {rawMaterials.map((material) => (
-                        <SelectItem key={material.id} value={material.id.toString()}>
-                          {material.name} ({material.unit})
-                        </SelectItem>
-                      ))}
-                    </FilterableSelect>
-                  </div>
-                  <div className="col-span-4">
-                    <Label htmlFor="amount">Amount</Label>
-                    <Input
-                      id="amount"
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={rawMaterialAmount === 0 ? '' : rawMaterialAmount}
-                      onChange={(e) => setRawMaterialAmount(e.target.value === '' ? '' : parseFloat(e.target.value))}
-                    />
-                  </div>
-                  <div className="col-span-2 flex items-end">
-                    <Button 
-                      type="button" 
-                      onClick={handleAddRawMaterial}
-                      className="w-full"
-                    >
-                      <Plus className="h-4 w-4 mr-1" /> Add
-                    </Button>
-                  </div>
-                </div>
-                
-                <div className="border rounded-md p-4">
-                  <h3 className="font-medium mb-2">Added Raw Materials</h3>
-                  {formData.rawMaterials.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">No raw materials added yet</p>
-                  ) : (
-                    <div className="space-y-2">
-                      {formData.rawMaterials.map((mat) => (
-                        <div key={mat.rawMaterialId} className="flex justify-between items-center bg-muted/50 p-2 rounded-md">
-                          <div>
-                            <span className="font-medium">{getRawMaterialName(mat.rawMaterialId)}</span>
-                            <Badge variant="outline" className="ml-2">
-                              {mat.amount} {getRawMaterialUnit(mat.rawMaterialId)}
-                            </Badge>
-                          </div>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            onClick={() => handleRemoveRawMaterial(mat.rawMaterialId)}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </TabsContent>
-          </Tabs>
-          
-          <DialogFooter className="mt-6">
-            <Button type="button" variant="outline" onClick={onClose}>
-              Cancel
+        <div className="grid gap-4 py-4">
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="name" className="text-right">
+              Name
+            </Label>
+            <Input
+              type="text"
+              id="name"
+              name="name"
+              value={editedPart.name}
+              onChange={handleChange}
+              className="col-span-3"
+            />
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="sku" className="text-right">
+              SKU
+            </Label>
+            <Input
+              type="text"
+              id="sku"
+              name="sku"
+              value={editedPart.sku}
+              onChange={handleChange}
+              className="col-span-3"
+            />
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="category" className="text-right">
+              Category
+            </Label>
+            <Select onValueChange={(value) => handleSelectChange('category', value)}>
+              <SelectTrigger className="col-span-3">
+                <SelectValue placeholder="Select a category" defaultValue={editedPart.category} />
+              </SelectTrigger>
+              <SelectContent>
+                {categories.map(category => (
+                  <SelectItem key={category} value={category}>{category}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="qualityRate" className="text-right">
+              Quality Rate
+            </Label>
+            <Input
+              type="number"
+              id="qualityRate"
+              name="qualityRate"
+              value={editedPart.qualityRate}
+              onChange={handleChange}
+              className="col-span-3"
+            />
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="stock" className="text-right">
+              Stock
+            </Label>
+            <Input
+              type="number"
+              id="stock"
+              name="stock"
+              value={editedPart.stock}
+              onChange={handleChange}
+              className="col-span-3"
+            />
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="status" className="text-right">
+              Status
+            </Label>
+            <Select onValueChange={(value) => handleSelectChange('status', value)}>
+              <SelectTrigger className="col-span-3">
+                <SelectValue placeholder="Select status" defaultValue={editedPart.status} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Active">Active</SelectItem>
+                <SelectItem value="Low Stock">Low Stock</SelectItem>
+                <SelectItem value="Discontinued">Discontinued</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid grid-cols-4 items-start gap-4">
+            <Label htmlFor="description" className="text-right mt-2">
+              Description
+            </Label>
+            <Input
+              id="description"
+              name="description"
+              value={editedPart.description}
+              onChange={handleChange}
+              className="col-span-3"
+            />
+          </div>
+
+          {/* Consumables */}
+          <div className="border-t pt-4">
+            <h4 className="text-md font-semibold">Consumables</h4>
+            <div className="grid grid-cols-4 items-center gap-4 mt-2">
+              <Label htmlFor="consumable" className="text-right">
+                Add Consumable
+              </Label>
+              <Select onValueChange={setConsumableId}>
+                <SelectTrigger className="col-span-2">
+                  <SelectValue placeholder="Select Consumable" />
+                </SelectTrigger>
+                <SelectContent>
+                  {consumables.map(consumable => (
+                    <SelectItem key={consumable.id} value={consumable.id.toString()}>
+                      {consumable.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Input
+                type="number"
+                placeholder="Amount"
+                value={consumableAmount}
+                onChange={(e) => setConsumableAmount(Number(e.target.value))}
+              />
+            </div>
+            <Button variant="outline" className="mt-2 w-full" onClick={handleAddConsumable}>
+              Add Consumable
             </Button>
-            <Button type="submit">Save Changes</Button>
-          </DialogFooter>
-        </form>
+
+            {editedPart.consumables.length > 0 && (
+              <ScrollArea className="h-40 mt-4 rounded-md border">
+                <div className="divide-y">
+                  {editedPart.consumables.map(consumable => {
+                    const actualConsumable = consumables.find(c => c.id === consumable.consumableId);
+                    return actualConsumable ? (
+                      <div key={consumable.consumableId} className="flex items-center justify-between p-2">
+                        <span>{actualConsumable.name} - Amount: {consumable.amount}</span>
+                        <Button variant="ghost" size="icon" onClick={() => handleRemoveConsumable(consumable.consumableId)}>
+                          Remove
+                        </Button>
+                      </div>
+                    ) : null;
+                  })}
+                </div>
+              </ScrollArea>
+            )}
+          </div>
+
+          {/* Raw Materials */}
+          <div className="border-t pt-4">
+            <h4 className="text-md font-semibold">Raw Materials</h4>
+            <div className="grid grid-cols-4 items-center gap-4 mt-2">
+              <Label htmlFor="rawMaterial" className="text-right">
+                Add Raw Material
+              </Label>
+              <Select onValueChange={setRawMaterialId}>
+                <SelectTrigger className="col-span-2">
+                  <SelectValue placeholder="Select Raw Material" />
+                </SelectTrigger>
+                <SelectContent>
+                  {rawMaterials.map(rawMaterial => (
+                    <SelectItem key={rawMaterial.id} value={rawMaterial.id.toString()}>
+                      {rawMaterial.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Input
+                type="number"
+                placeholder="Amount"
+                value={rawMaterialAmount}
+                onChange={(e) => setRawMaterialAmount(Number(e.target.value))}
+              />
+            </div>
+            <Button variant="outline" className="mt-2 w-full" onClick={handleAddRawMaterial}>
+              Add Raw Material
+            </Button>
+
+            {editedPart.rawMaterials.length > 0 && (
+              <ScrollArea className="h-40 mt-4 rounded-md border">
+                <div className="divide-y">
+                  {editedPart.rawMaterials.map(rawMaterial => {
+                    const actualRawMaterial = rawMaterials.find(r => r.id === rawMaterial.rawMaterialId);
+                    return actualRawMaterial ? (
+                      <div key={rawMaterial.rawMaterialId} className="flex items-center justify-between p-2">
+                        <span>{actualRawMaterial.name} - Amount: {rawMaterial.amount}</span>
+                        <Button variant="ghost" size="icon" onClick={() => handleRemoveRawMaterial(rawMaterial.rawMaterialId)}>
+                          Remove
+                        </Button>
+                      </div>
+                    ) : null;
+                  })}
+                </div>
+              </ScrollArea>
+            )}
+          </div>
+        </div>
+        <DialogFooter>
+          <Button type="button" variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button type="submit" onClick={handleSave}>Save</Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

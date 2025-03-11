@@ -9,68 +9,83 @@ import {
   Calculator,
   Layers
 } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import ModuleCard from '@/components/ui/ModuleCard';
+import { useData } from '@/contexts/DataContext';
 
 const Index = () => {
-  const modules = [
-    {
-      title: 'Calendar',
-      description: 'Manage shift planning, holidays and working days',
-      icon: <Calendar size={24} />,
-      path: '/calendar',
-      metric: { value: '12', label: 'Shifts This Week' }
-    },
-    {
-      title: 'Machines',
-      description: 'Track production planning and availability',
-      icon: <Settings size={24} />,
-      path: '/machines',
-      metric: { value: '94%', label: 'Availability' }
-    },
-    {
-      title: 'Parts',
-      description: 'Manage product references and quality metrics',
-      icon: <Box size={24} />,
-      path: '/parts',
-      metric: { value: '217', label: 'Active Parts' }
-    },
-    {
-      title: 'OEE',
-      description: 'Monitor efficiency metrics and future projections',
-      icon: <BarChart3 size={24} />,
-      path: '/oee',
-      metric: { value: '86%', label: 'Current OEE' }
-    },
-    {
-      title: 'Consumables',
-      description: 'Track materials usage and forecast needs',
-      icon: <Package size={24} />,
-      path: '/consumables',
-      metric: { value: '24', label: 'Types Tracked' }
-    },
-    {
-      title: 'Raw Materials',
-      description: 'Manage raw materials used in production',
-      icon: <Layers size={24} />,
-      path: '/raw-materials',
-      metric: { value: '12', label: 'Materials' }
-    },
-    {
-      title: 'Forecast',
-      description: 'Analyze demand patterns and production needs',
-      icon: <TrendingUp size={24} />,
-      path: '/forecast',
-      metric: { value: '8wk', label: 'Forecast Range' }
-    },
-    {
-      title: 'Cost Analysis',
-      description: 'Calculate costs based on machines and materials',
-      icon: <Calculator size={24} />,
-      path: '/cost-breakdown',
-      metric: { value: '€125K', label: 'Monthly Cost' }
-    }
-  ];
+  const { parts, machines, consumables, rawMaterials } = useData();
+  const [modules, setModules] = useState<any[]>([]);
+
+  // Calculate metrics from actual data
+  useEffect(() => {
+    const activePartsCount = parts.filter(part => part.status === 'Active').length;
+    const availableMachines = machines.length > 0 
+      ? Math.round((machines.filter(m => m.status === 'Operational').length / machines.length) * 100) 
+      : 0;
+    const consumablesCount = consumables.length;
+    const rawMaterialsCount = rawMaterials.length;
+    
+    setModules([
+      {
+        title: 'Calendar',
+        description: 'Manage shift planning, holidays and working days',
+        icon: <Calendar size={24} />,
+        path: '/calendar',
+        metric: { value: '12', label: 'Shifts This Week' }
+      },
+      {
+        title: 'Machines',
+        description: 'Track production planning and availability',
+        icon: <Settings size={24} />,
+        path: '/machines',
+        metric: { value: `${availableMachines}%`, label: 'Availability' }
+      },
+      {
+        title: 'Parts',
+        description: 'Manage product references and quality metrics',
+        icon: <Box size={24} />,
+        path: '/parts',
+        metric: { value: activePartsCount, label: 'Active Parts' }
+      },
+      {
+        title: 'OEE',
+        description: 'Monitor efficiency metrics and future projections',
+        icon: <BarChart3 size={24} />,
+        path: '/oee',
+        metric: { value: '86%', label: 'Current OEE' }
+      },
+      {
+        title: 'Consumables',
+        description: 'Track materials usage and forecast needs',
+        icon: <Package size={24} />,
+        path: '/consumables',
+        metric: { value: consumablesCount, label: 'Types Tracked' }
+      },
+      {
+        title: 'Raw Materials',
+        description: 'Manage raw materials used in production',
+        icon: <Layers size={24} />,
+        path: '/raw-materials',
+        metric: { value: rawMaterialsCount, label: 'Materials' }
+      },
+      {
+        title: 'Forecast',
+        description: 'Analyze demand patterns and production needs',
+        icon: <TrendingUp size={24} />,
+        path: '/forecast',
+        metric: { value: '8wk', label: 'Forecast Range' }
+      },
+      {
+        title: 'Cost Analysis',
+        description: 'Calculate costs based on machines and materials',
+        icon: <Calculator size={24} />,
+        path: '/cost-breakdown',
+        metric: { value: '€125K', label: 'Monthly Cost' }
+      }
+    ]);
+  }, [parts, machines, consumables, rawMaterials]);
 
   return (
     <DashboardLayout 
@@ -79,7 +94,7 @@ const Index = () => {
     >
       <div className="relative overflow-hidden pb-16">
         {/* Background effect */}
-        <div className="absolute inset-0 bg-grid-gray-100 [mask-image:radial-gradient(ellipse_at_center,white_20%,transparent_75%)] -z-10" />
+        <div className="absolute inset-0 bg-grid-gray-100 [mask-image:radial-gradient(ellipse_at_center,white_20%,transparent_75%)] dark:bg-grid-gray-800 -z-10" />
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {modules.map((module, index) => (
@@ -96,7 +111,7 @@ const Index = () => {
         </div>
         
         <div className="mt-12 mx-auto max-w-2xl text-center">
-          <div className="inline-flex items-center justify-center p-1 bg-white/50 backdrop-blur-sm border border-border rounded-full">
+          <div className="inline-flex items-center justify-center p-1 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border border-border rounded-full">
             <span className="flex w-3 h-3 me-3 bg-green-400 rounded-full animate-pulse"></span>
             <p className="text-sm font-medium text-foreground">
               All systems operational and running at optimal capacity

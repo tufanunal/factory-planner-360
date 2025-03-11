@@ -27,16 +27,19 @@ const ModuleCard = ({
     <Link 
       to={path}
       className={cn(
-        "block group rounded-xl p-6 bg-white border border-border",
+        "block group rounded-xl p-6",
+        "dark:bg-slate-900 bg-white border border-border",
         "shadow-sm hover:shadow-md transition-all duration-300",
-        "card-hover",
+        "dark:hover:bg-slate-800 card-hover",
         className
       )}
     >
       <div className="flex items-start justify-between">
         <div className={cn(
           "flex items-center justify-center w-12 h-12 rounded-lg",
-          "bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white",
+          "bg-primary/10 text-primary",
+          "dark:bg-blue-900/30 dark:text-blue-400",
+          "group-hover:bg-primary group-hover:text-white",
           "transition-colors duration-300"
         )}>
           {icon}
