@@ -82,7 +82,8 @@ const PartEditModal = ({
   };
 
   const handleAddConsumable = () => {
-    if (!consumableId || consumableAmount <= 0) {
+    // Fix for TypeScript error: proper type check before comparison
+    if (!consumableId || typeof consumableAmount !== 'number' || consumableAmount <= 0) {
       toast.error("Please select a consumable and specify a valid amount");
       return;
     }
@@ -99,7 +100,7 @@ const PartEditModal = ({
       ...prev,
       consumables: [
         ...prev.consumables,
-        { consumableId: conId, amount: Number(consumableAmount) }
+        { consumableId: conId, amount: consumableAmount }
       ]
     }));
 
@@ -115,7 +116,8 @@ const PartEditModal = ({
   };
 
   const handleAddRawMaterial = () => {
-    if (!rawMaterialId || rawMaterialAmount <= 0) {
+    // Fix for TypeScript error: proper type check before comparison
+    if (!rawMaterialId || typeof rawMaterialAmount !== 'number' || rawMaterialAmount <= 0) {
       toast.error("Please select a raw material and specify a valid amount");
       return;
     }
@@ -132,7 +134,7 @@ const PartEditModal = ({
       ...prev,
       rawMaterials: [
         ...prev.rawMaterials,
-        { rawMaterialId: matId, amount: Number(rawMaterialAmount) }
+        { rawMaterialId: matId, amount: rawMaterialAmount }
       ]
     }));
 
