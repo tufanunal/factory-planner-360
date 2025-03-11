@@ -1,9 +1,10 @@
+
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, FilterableSelect } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { Machine } from '@/types/machine';
 import { DEFAULT_CATEGORY } from './CategoryManager';
@@ -130,8 +131,8 @@ const MachineEditModal = ({
                 type="number"
                 min="0"
                 max="100"
-                value={formData.availability}
-                onChange={(e) => handleChange('availability', parseInt(e.target.value))}
+                value={formData.availability || ''}
+                onChange={(e) => handleChange('availability', parseInt(e.target.value) || 0)}
                 className="col-span-3"
               />
             </div>
@@ -174,19 +175,15 @@ const MachineEditModal = ({
               <Label htmlFor="category" className="text-right">
                 Category
               </Label>
-              <Select 
+              <FilterableSelect 
                 value={formData.category || DEFAULT_CATEGORY} 
                 onValueChange={(value) => handleChange('category', value)}
+                triggerClassName="col-span-3"
               >
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Select category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.map((category) => (
-                    <SelectItem key={category} value={category}>{category}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                {categories.map((category) => (
+                  <SelectItem key={category} value={category}>{category}</SelectItem>
+                ))}
+              </FilterableSelect>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="compatibleParts" className="text-right">

@@ -145,6 +145,16 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('rawMaterials', JSON.stringify(rawMaterials));
   }, [rawMaterials]);
 
+  // When a new machine category is added, ensure it's also available for parts
+  useEffect(() => {
+    // Sync categories between machines and parts (in case they need to match)
+    const combinedCategories = [...new Set([...machineCategories, ...partCategories])];
+    
+    if (JSON.stringify(combinedCategories) !== JSON.stringify(partCategories)) {
+      setPartCategories(combinedCategories);
+    }
+  }, [machineCategories, partCategories]);
+
   const value = {
     machines,
     setMachines,

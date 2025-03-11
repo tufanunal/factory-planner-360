@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, FilterableSelect } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { Part } from '@/types/part';
 import { DEFAULT_CATEGORY } from '@/components/machines/CategoryManager';
@@ -29,8 +29,8 @@ const PartEditModal = ({
   categories: propCategories 
 }: PartEditModalProps) => {
   // Use categories from context or from props as a fallback
-  const { machineCategories, consumables, rawMaterials } = useData();
-  const categories = propCategories || machineCategories || [DEFAULT_CATEGORY];
+  const { partCategories, consumables, rawMaterials } = useData();
+  const categories = propCategories || partCategories || [DEFAULT_CATEGORY];
 
   const [formData, setFormData] = useState<Part>({
     id: 0,
@@ -46,9 +46,9 @@ const PartEditModal = ({
 
   const [selectedTab, setSelectedTab] = useState('general');
   const [consumableId, setConsumableId] = useState('');
-  const [consumableAmount, setConsumableAmount] = useState(0);
+  const [consumableAmount, setConsumableAmount] = useState<number | ''>(0);
   const [rawMaterialId, setRawMaterialId] = useState('');
-  const [rawMaterialAmount, setRawMaterialAmount] = useState(0);
+  const [rawMaterialAmount, setRawMaterialAmount] = useState<number | ''>(0);
 
   useEffect(() => {
     if (part) {
@@ -99,12 +99,12 @@ const PartEditModal = ({
       ...prev,
       consumables: [
         ...prev.consumables,
-        { consumableId: conId, amount: consumableAmount }
+        { consumableId: conId, amount: Number(consumableAmount) }
       ]
     }));
 
     setConsumableId('');
-    setConsumableAmount(0);
+    setConsumableAmount('');
   };
 
   const handleRemoveConsumable = (consumableId: number) => {
@@ -132,12 +132,12 @@ const PartEditModal = ({
       ...prev,
       rawMaterials: [
         ...prev.rawMaterials,
-        { rawMaterialId: matId, amount: rawMaterialAmount }
+        { rawMaterialId: matId, amount: Number(rawMaterialAmount) }
       ]
     }));
 
     setRawMaterialId('');
-    setRawMaterialAmount(0);
+    setRawMaterialAmount('');
   };
 
   const handleRemoveRawMaterial = (rawMaterialId: number) => {
@@ -215,19 +215,15 @@ const PartEditModal = ({
                   <Label htmlFor="category" className="text-right">
                     Category
                   </Label>
-                  <Select 
+                  <FilterableSelect 
                     value={formData.category} 
                     onValueChange={(value) => handleChange('category', value)}
+                    triggerClassName="col-span-3"
                   >
-                    <SelectTrigger className="col-span-3">
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map((category) => (
-                        <SelectItem key={category} value={category}>{category}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    {categories.map((category) => (
+                      <SelectItem key={category} value={category}>{category}</SelectItem>
+                    ))}
+                  </FilterableSelect>
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="status" className="text-right">
@@ -257,8 +253,8 @@ const PartEditModal = ({
                     min="0"
                     max="100"
                     step="0.1"
-                    value={formData.qualityRate}
-                    onChange={(e) => handleChange('qualityRate', parseFloat(e.target.value))}
+                    value={formData.qualityRate || ''}
+                    onChange={(e) => handleChange('qualityRate', parseFloat(e.target.value) || 0)}
                     className="col-span-3"
                   />
                 </div>
@@ -270,8 +266,8 @@ const PartEditModal = ({
                     id="stock"
                     type="number"
                     min="0"
-                    value={formData.stock}
-                    onChange={(e) => handleChange('stock', parseInt(e.target.value))}
+                    value={formData.stock || ''}
+                    onChange={(e) => handleChange('stock', parseInt(e.target.value) || 0)}
                     className="col-span-3"
                   />
                 </div>
@@ -283,21 +279,16 @@ const PartEditModal = ({
                 <div className="grid grid-cols-12 gap-4">
                   <div className="col-span-6">
                     <Label htmlFor="consumable">Consumable</Label>
-                    <Select 
+                    <FilterableSelect 
                       value={consumableId} 
                       onValueChange={setConsumableId}
                     >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select consumable" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {consumables.map((consumable) => (
-                          <SelectItem key={consumable.id} value={consumable.id.toString()}>
-                            {consumable.name} ({consumable.unit})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      {consumables.map((consumable) => (
+                        <SelectItem key={consumable.id} value={consumable.id.toString()}>
+                          {consumable.name} ({consumable.unit})
+                        </SelectItem>
+                      ))}
+                    </FilterableSelect>
                   </div>
                   <div className="col-span-4">
                     <Label htmlFor="amount">Amount</Label>
@@ -306,8 +297,8 @@ const PartEditModal = ({
                       type="number"
                       min="0"
                       step="0.01"
-                      value={consumableAmount}
-                      onChange={(e) => setConsumableAmount(parseFloat(e.target.value) || 0)}
+                      value={consumableAmount === 0 ? '' : consumableAmount}
+                      onChange={(e) => setConsumableAmount(e.target.value === '' ? '' : parseFloat(e.target.value))}
                     />
                   </div>
                   <div className="col-span-2 flex items-end">
@@ -355,21 +346,16 @@ const PartEditModal = ({
                 <div className="grid grid-cols-12 gap-4">
                   <div className="col-span-6">
                     <Label htmlFor="rawMaterial">Raw Material</Label>
-                    <Select 
+                    <FilterableSelect 
                       value={rawMaterialId} 
                       onValueChange={setRawMaterialId}
                     >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select raw material" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {rawMaterials.map((material) => (
-                          <SelectItem key={material.id} value={material.id.toString()}>
-                            {material.name} ({material.unit})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      {rawMaterials.map((material) => (
+                        <SelectItem key={material.id} value={material.id.toString()}>
+                          {material.name} ({material.unit})
+                        </SelectItem>
+                      ))}
+                    </FilterableSelect>
                   </div>
                   <div className="col-span-4">
                     <Label htmlFor="amount">Amount</Label>
@@ -378,8 +364,8 @@ const PartEditModal = ({
                       type="number"
                       min="0"
                       step="0.01"
-                      value={rawMaterialAmount}
-                      onChange={(e) => setRawMaterialAmount(parseFloat(e.target.value) || 0)}
+                      value={rawMaterialAmount === 0 ? '' : rawMaterialAmount}
+                      onChange={(e) => setRawMaterialAmount(e.target.value === '' ? '' : parseFloat(e.target.value))}
                     />
                   </div>
                   <div className="col-span-2 flex items-end">
