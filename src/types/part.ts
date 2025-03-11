@@ -7,6 +7,7 @@ export interface Part {
   qualityRate: number;
   stock: number;
   status: 'Active' | 'Low Stock' | 'Discontinued';
+  description?: string;
   consumables: {
     consumableId: number;
     amount: number;

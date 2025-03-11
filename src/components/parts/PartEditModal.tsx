@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import {
   Dialog,
@@ -9,12 +10,14 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { FilterableSelect, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Part } from '@/types/part';
 import { toast } from 'sonner';
 import { useData } from '@/contexts/DataContext';
-import { ScrollArea } from "@/components/ui/scroll-area"
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { X, Plus, Package, Layers } from 'lucide-react';
 
 interface PartEditModalProps {
   part: Part | null;
@@ -50,10 +53,13 @@ const PartEditModal = ({
   const [consumableAmount, setConsumableAmount] = useState<number>(0);
   const [rawMaterialId, setRawMaterialId] = useState<string>("");
   const [rawMaterialAmount, setRawMaterialAmount] = useState<number>(0);
+  const [activeTab, setActiveTab] = useState("details");
 
   useEffect(() => {
-    setEditedPart(
-      part || {
+    if (part) {
+      setEditedPart(part);
+    } else {
+      setEditedPart({
         id: 0,
         name: '',
         sku: '',
@@ -64,8 +70,9 @@ const PartEditModal = ({
         status: 'Active',
         consumables: [],
         rawMaterials: []
-      }
-    );
+      });
+    }
+    setActiveTab("details");
   }, [part, categories]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -83,20 +90,21 @@ const PartEditModal = ({
     }));
   };
 
-  // Fix the error with string | number comparison by ensuring numeric types
   const handleAddConsumable = () => {
+    // Convert to number to ensure proper type checking
     const amount = Number(consumableAmount);
+    const conId = Number(consumableId);
+    
     if (!consumableId || isNaN(amount) || amount <= 0) {
       toast.error("Please select a consumable and specify a valid amount");
       return;
     }
 
-    // Find the selected consumable
-    const selectedConsumable = consumables.find(c => c.id === Number(consumableId));
-    if (!selectedConsumable) return;
-
-    // Convert ID to number to ensure it's consistent
-    const conId = Number(consumableId);
+    // Check if consumable already exists
+    if (editedPart.consumables.some(c => c.consumableId === conId)) {
+      toast.error("This consumable is already added to the part");
+      return;
+    }
 
     // Add the consumable to the part
     setEditedPart(prev => ({
@@ -112,20 +120,21 @@ const PartEditModal = ({
     setConsumableAmount(0);
   };
 
-  // Fix the error with string | number comparison by ensuring numeric types
   const handleAddRawMaterial = () => {
+    // Convert to number to ensure proper type checking
     const amount = Number(rawMaterialAmount);
+    const matId = Number(rawMaterialId);
+    
     if (!rawMaterialId || isNaN(amount) || amount <= 0) {
       toast.error("Please select a raw material and specify a valid amount");
       return;
     }
 
-    // Find the selected raw material
-    const selectedRawMaterial = rawMaterials.find(r => r.id === Number(rawMaterialId));
-    if (!selectedRawMaterial) return;
-
-    // Convert ID to number to ensure it's consistent
-    const matId = Number(rawMaterialId);
+    // Check if raw material already exists
+    if (editedPart.rawMaterials.some(r => r.rawMaterialId === matId)) {
+      toast.error("This raw material is already added to the part");
+      return;
+    }
 
     // Add the raw material to the part
     setEditedPart(prev => ({
@@ -166,208 +175,258 @@ const PartEditModal = ({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[625px]">
+      <DialogContent className="sm:max-w-[625px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{part ? 'Edit Part' : 'Add Part'}</DialogTitle>
           <DialogDescription>
             {part ? 'Edit part details and save changes.' : 'Create a new part by entering the details below.'}
           </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-4 py-4">
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="name" className="text-right">
-              Name
-            </Label>
-            <Input
-              type="text"
-              id="name"
-              name="name"
-              value={editedPart.name}
-              onChange={handleChange}
-              className="col-span-3"
-            />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="sku" className="text-right">
-              SKU
-            </Label>
-            <Input
-              type="text"
-              id="sku"
-              name="sku"
-              value={editedPart.sku}
-              onChange={handleChange}
-              className="col-span-3"
-            />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="category" className="text-right">
-              Category
-            </Label>
-            <Select onValueChange={(value) => handleSelectChange('category', value)}>
-              <SelectTrigger className="col-span-3">
-                <SelectValue placeholder="Select a category" defaultValue={editedPart.category} />
-              </SelectTrigger>
-              <SelectContent>
+        
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="grid grid-cols-3 mb-4">
+            <TabsTrigger value="details" className="flex items-center gap-2">
+              <Box size={16} />
+              Details
+            </TabsTrigger>
+            <TabsTrigger value="consumables" className="flex items-center gap-2">
+              <Package size={16} />
+              Consumables
+            </TabsTrigger>
+            <TabsTrigger value="rawMaterials" className="flex items-center gap-2">
+              <Layers size={16} />
+              Raw Materials
+            </TabsTrigger>
+          </TabsList>
+          
+          {/* Basic details tab */}
+          <TabsContent value="details" className="space-y-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="name" className="text-right">
+                Name
+              </Label>
+              <Input
+                type="text"
+                id="name"
+                name="name"
+                value={editedPart.name}
+                onChange={handleChange}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="sku" className="text-right">
+                SKU
+              </Label>
+              <Input
+                type="text"
+                id="sku"
+                name="sku"
+                value={editedPart.sku}
+                onChange={handleChange}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="category" className="text-right">
+                Category
+              </Label>
+              <FilterableSelect 
+                value={editedPart.category} 
+                onValueChange={(value) => handleSelectChange('category', value)}
+                triggerClassName="col-span-3"
+              >
                 {categories.map(category => (
                   <SelectItem key={category} value={category}>{category}</SelectItem>
                 ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="qualityRate" className="text-right">
-              Quality Rate
-            </Label>
-            <Input
-              type="number"
-              id="qualityRate"
-              name="qualityRate"
-              value={editedPart.qualityRate}
-              onChange={handleChange}
-              className="col-span-3"
-            />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="stock" className="text-right">
-              Stock
-            </Label>
-            <Input
-              type="number"
-              id="stock"
-              name="stock"
-              value={editedPart.stock}
-              onChange={handleChange}
-              className="col-span-3"
-            />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="status" className="text-right">
-              Status
-            </Label>
-            <Select onValueChange={(value) => handleSelectChange('status', value)}>
-              <SelectTrigger className="col-span-3">
-                <SelectValue placeholder="Select status" defaultValue={editedPart.status} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Active">Active</SelectItem>
-                <SelectItem value="Low Stock">Low Stock</SelectItem>
-                <SelectItem value="Discontinued">Discontinued</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="grid grid-cols-4 items-start gap-4">
-            <Label htmlFor="description" className="text-right mt-2">
-              Description
-            </Label>
-            <Input
-              id="description"
-              name="description"
-              value={editedPart.description}
-              onChange={handleChange}
-              className="col-span-3"
-            />
-          </div>
-
-          {/* Consumables */}
-          <div className="border-t pt-4">
-            <h4 className="text-md font-semibold">Consumables</h4>
-            <div className="grid grid-cols-4 items-center gap-4 mt-2">
-              <Label htmlFor="consumable" className="text-right">
-                Add Consumable
+              </FilterableSelect>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="qualityRate" className="text-right">
+                Quality Rate
               </Label>
-              <Select onValueChange={setConsumableId}>
-                <SelectTrigger className="col-span-2">
-                  <SelectValue placeholder="Select Consumable" />
-                </SelectTrigger>
-                <SelectContent>
-                  {consumables.map(consumable => (
-                    <SelectItem key={consumable.id} value={consumable.id.toString()}>
-                      {consumable.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
               <Input
                 type="number"
-                placeholder="Amount"
-                value={consumableAmount}
-                onChange={(e) => setConsumableAmount(Number(e.target.value))}
+                id="qualityRate"
+                name="qualityRate"
+                value={editedPart.qualityRate}
+                onChange={handleChange}
+                className="col-span-3"
               />
             </div>
-            <Button variant="outline" className="mt-2 w-full" onClick={handleAddConsumable}>
-              Add Consumable
-            </Button>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="stock" className="text-right">
+                Stock
+              </Label>
+              <Input
+                type="number"
+                id="stock"
+                name="stock"
+                value={editedPart.stock}
+                onChange={handleChange}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="status" className="text-right">
+                Status
+              </Label>
+              <Select 
+                value={editedPart.status} 
+                onValueChange={(value) => handleSelectChange('status', value)}
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Active">Active</SelectItem>
+                  <SelectItem value="Low Stock">Low Stock</SelectItem>
+                  <SelectItem value="Discontinued">Discontinued</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-4 items-start gap-4">
+              <Label htmlFor="description" className="text-right mt-2">
+                Description
+              </Label>
+              <Input
+                id="description"
+                name="description"
+                value={editedPart.description || ""}
+                onChange={handleChange}
+                className="col-span-3"
+              />
+            </div>
+          </TabsContent>
+          
+          {/* Consumables tab */}
+          <TabsContent value="consumables">
+            <div className="space-y-4">
+              <div className="flex gap-4 items-end">
+                <div className="flex-1">
+                  <Label htmlFor="consumable" className="mb-2 block">Consumable</Label>
+                  <FilterableSelect
+                    value={consumableId}
+                    onValueChange={setConsumableId}
+                    placeholder="Select Consumable"
+                  >
+                    {consumables.map(consumable => (
+                      <SelectItem key={consumable.id} value={consumable.id.toString()}>
+                        {consumable.name}
+                      </SelectItem>
+                    ))}
+                  </FilterableSelect>
+                </div>
+                <div className="w-24">
+                  <Label htmlFor="amount" className="mb-2 block">Amount</Label>
+                  <Input
+                    type="number"
+                    id="amount"
+                    placeholder="Amount"
+                    value={consumableAmount}
+                    onChange={(e) => setConsumableAmount(Number(e.target.value))}
+                  />
+                </div>
+                <Button onClick={handleAddConsumable} className="flex items-center gap-1">
+                  <Plus size={16} /> Add
+                </Button>
+              </div>
 
-            {editedPart.consumables.length > 0 && (
-              <ScrollArea className="h-40 mt-4 rounded-md border">
-                <div className="divide-y">
-                  {editedPart.consumables.map(consumable => {
-                    const actualConsumable = consumables.find(c => c.id === consumable.consumableId);
+              {editedPart.consumables.length > 0 ? (
+                <div className="divide-y border rounded-md">
+                  {editedPart.consumables.map(c => {
+                    const actualConsumable = consumables.find(cons => cons.id === c.consumableId);
                     return actualConsumable ? (
-                      <div key={consumable.consumableId} className="flex items-center justify-between p-2">
-                        <span>{actualConsumable.name} - Amount: {consumable.amount}</span>
-                        <Button variant="ghost" size="icon" onClick={() => handleRemoveConsumable(consumable.consumableId)}>
-                          Remove
+                      <div key={c.consumableId} className="flex items-center justify-between p-3">
+                        <div>
+                          <span className="font-medium">{actualConsumable.name}</span>
+                          <span className="ml-2 text-sm text-muted-foreground">Amount: {c.amount}</span>
+                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => handleRemoveConsumable(c.consumableId)}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <X size={16} />
                         </Button>
                       </div>
                     ) : null;
                   })}
                 </div>
-              </ScrollArea>
-            )}
-          </div>
-
-          {/* Raw Materials */}
-          <div className="border-t pt-4">
-            <h4 className="text-md font-semibold">Raw Materials</h4>
-            <div className="grid grid-cols-4 items-center gap-4 mt-2">
-              <Label htmlFor="rawMaterial" className="text-right">
-                Add Raw Material
-              </Label>
-              <Select onValueChange={setRawMaterialId}>
-                <SelectTrigger className="col-span-2">
-                  <SelectValue placeholder="Select Raw Material" />
-                </SelectTrigger>
-                <SelectContent>
-                  {rawMaterials.map(rawMaterial => (
-                    <SelectItem key={rawMaterial.id} value={rawMaterial.id.toString()}>
-                      {rawMaterial.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Input
-                type="number"
-                placeholder="Amount"
-                value={rawMaterialAmount}
-                onChange={(e) => setRawMaterialAmount(Number(e.target.value))}
-              />
+              ) : (
+                <div className="text-center py-8 text-muted-foreground border rounded-md">
+                  No consumables added yet
+                </div>
+              )}
             </div>
-            <Button variant="outline" className="mt-2 w-full" onClick={handleAddRawMaterial}>
-              Add Raw Material
-            </Button>
+          </TabsContent>
+          
+          {/* Raw Materials tab */}
+          <TabsContent value="rawMaterials">
+            <div className="space-y-4">
+              <div className="flex gap-4 items-end">
+                <div className="flex-1">
+                  <Label htmlFor="rawMaterial" className="mb-2 block">Raw Material</Label>
+                  <FilterableSelect
+                    value={rawMaterialId}
+                    onValueChange={setRawMaterialId}
+                    placeholder="Select Raw Material"
+                  >
+                    {rawMaterials.map(rawMaterial => (
+                      <SelectItem key={rawMaterial.id} value={rawMaterial.id.toString()}>
+                        {rawMaterial.name}
+                      </SelectItem>
+                    ))}
+                  </FilterableSelect>
+                </div>
+                <div className="w-24">
+                  <Label htmlFor="amount" className="mb-2 block">Amount</Label>
+                  <Input
+                    type="number"
+                    id="amount"
+                    placeholder="Amount"
+                    value={rawMaterialAmount}
+                    onChange={(e) => setRawMaterialAmount(Number(e.target.value))}
+                  />
+                </div>
+                <Button onClick={handleAddRawMaterial} className="flex items-center gap-1">
+                  <Plus size={16} /> Add
+                </Button>
+              </div>
 
-            {editedPart.rawMaterials.length > 0 && (
-              <ScrollArea className="h-40 mt-4 rounded-md border">
-                <div className="divide-y">
-                  {editedPart.rawMaterials.map(rawMaterial => {
-                    const actualRawMaterial = rawMaterials.find(r => r.id === rawMaterial.rawMaterialId);
+              {editedPart.rawMaterials.length > 0 ? (
+                <div className="divide-y border rounded-md">
+                  {editedPart.rawMaterials.map(r => {
+                    const actualRawMaterial = rawMaterials.find(rm => rm.id === r.rawMaterialId);
                     return actualRawMaterial ? (
-                      <div key={rawMaterial.rawMaterialId} className="flex items-center justify-between p-2">
-                        <span>{actualRawMaterial.name} - Amount: {rawMaterial.amount}</span>
-                        <Button variant="ghost" size="icon" onClick={() => handleRemoveRawMaterial(rawMaterial.rawMaterialId)}>
-                          Remove
+                      <div key={r.rawMaterialId} className="flex items-center justify-between p-3">
+                        <div>
+                          <span className="font-medium">{actualRawMaterial.name}</span>
+                          <span className="ml-2 text-sm text-muted-foreground">Amount: {r.amount}</span>
+                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => handleRemoveRawMaterial(r.rawMaterialId)}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <X size={16} />
                         </Button>
                       </div>
                     ) : null;
                   })}
                 </div>
-              </ScrollArea>
-            )}
-          </div>
-        </div>
-        <DialogFooter>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground border rounded-md">
+                  No raw materials added yet
+                </div>
+              )}
+            </div>
+          </TabsContent>
+        </Tabs>
+        
+        <DialogFooter className="mt-6">
           <Button type="button" variant="secondary" onClick={onClose}>
             Cancel
           </Button>

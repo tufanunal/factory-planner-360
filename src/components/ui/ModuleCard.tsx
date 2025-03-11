@@ -28,9 +28,9 @@ const ModuleCard = ({
       to={path}
       className={cn(
         "block group rounded-xl p-6",
-        "dark:bg-slate-900 bg-white border border-border",
+        "bg-white dark:bg-slate-800 border border-border",
         "shadow-sm hover:shadow-md transition-all duration-300",
-        "dark:hover:bg-slate-800 card-hover",
+        "hover:bg-slate-50 dark:hover:bg-slate-700 card-hover",
         className
       )}
     >
@@ -38,7 +38,7 @@ const ModuleCard = ({
         <div className={cn(
           "flex items-center justify-center w-12 h-12 rounded-lg",
           "bg-primary/10 text-primary",
-          "dark:bg-blue-900/30 dark:text-blue-400",
+          "dark:bg-primary/20 dark:text-primary-foreground",
           "group-hover:bg-primary group-hover:text-white",
           "transition-colors duration-300"
         )}>
