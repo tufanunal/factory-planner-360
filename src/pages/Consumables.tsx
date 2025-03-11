@@ -12,37 +12,6 @@ import UnitManager from '@/components/common/UnitManager';
 import ConsumableEditModal from '@/components/consumables/ConsumableEditModal';
 import { toast } from 'sonner';
 
-const initialConsumablesData: Consumable[] = [
-  { 
-    id: 1, 
-    name: 'Machine Oil', 
-    unit: 'liter',
-    stock: 150,
-    costPerUnit: 12.5
-  },
-  { 
-    id: 2, 
-    name: 'Lubricant', 
-    unit: 'kg',
-    stock: 75,
-    costPerUnit: 28.99
-  },
-  { 
-    id: 3, 
-    name: 'Cleaning Solution', 
-    unit: 'liter',
-    stock: 95,
-    costPerUnit: 8.75
-  },
-  { 
-    id: 4, 
-    name: 'Sealing Tape', 
-    unit: 'meter',
-    stock: 500,
-    costPerUnit: 0.45
-  }
-];
-
 const ConsumablesPage = () => {
   const { consumables, setConsumables, units } = useData();
   const [searchQuery, setSearchQuery] = useState('');
@@ -79,11 +48,6 @@ const ConsumablesPage = () => {
   const handleDeleteConsumable = (consumableId: number) => {
     setConsumables(consumables.filter(c => c.id !== consumableId));
     toast.success("Consumable removed successfully");
-  };
-
-  const handleResetData = () => {
-    setConsumables(initialConsumablesData);
-    toast.success("Consumables data has been reset to default");
   };
 
   return (
@@ -126,13 +90,6 @@ const ConsumablesPage = () => {
                 Filters
               </Button>
               <UnitManager />
-              <Button 
-                variant="outline" 
-                className="flex items-center text-red-500"
-                onClick={handleResetData}
-              >
-                Reset Data
-              </Button>
             </div>
             
             <div className="rounded-md border">

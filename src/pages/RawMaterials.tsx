@@ -12,37 +12,6 @@ import UnitManager from '@/components/common/UnitManager';
 import RawMaterialEditModal from '@/components/rawMaterials/RawMaterialEditModal';
 import { toast } from 'sonner';
 
-const initialRawMaterialsData: RawMaterial[] = [
-  { 
-    id: 1, 
-    name: 'Aluminum', 
-    unit: 'kg',
-    stock: 500,
-    costPerUnit: 5.25
-  },
-  { 
-    id: 2, 
-    name: 'Steel', 
-    unit: 'kg',
-    stock: 850,
-    costPerUnit: 3.75
-  },
-  { 
-    id: 3, 
-    name: 'Plastic Granules', 
-    unit: 'kg',
-    stock: 300,
-    costPerUnit: 2.50
-  },
-  { 
-    id: 4, 
-    name: 'Copper Wire', 
-    unit: 'meter',
-    stock: 1200,
-    costPerUnit: 1.80
-  }
-];
-
 const RawMaterialsPage = () => {
   const { rawMaterials, setRawMaterials, units } = useData();
   const [searchQuery, setSearchQuery] = useState('');
@@ -79,11 +48,6 @@ const RawMaterialsPage = () => {
   const handleDeleteRawMaterial = (rawMaterialId: number) => {
     setRawMaterials(rawMaterials.filter(m => m.id !== rawMaterialId));
     toast.success("Raw material removed successfully");
-  };
-
-  const handleResetData = () => {
-    setRawMaterials(initialRawMaterialsData);
-    toast.success("Raw materials data has been reset to default");
   };
 
   return (
@@ -126,13 +90,6 @@ const RawMaterialsPage = () => {
                 Filters
               </Button>
               <UnitManager />
-              <Button 
-                variant="outline" 
-                className="flex items-center text-red-500"
-                onClick={handleResetData}
-              >
-                Reset Data
-              </Button>
             </div>
             
             <div className="rounded-md border">

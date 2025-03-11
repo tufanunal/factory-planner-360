@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -11,7 +10,8 @@ import {
   TrendingUp, 
   Calculator, 
   Home,
-  SunMoon
+  SunMoon,
+  Layers
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/hooks/use-theme';
@@ -29,6 +29,7 @@ const navItems: NavItem[] = [
   { name: 'Parts', icon: <Box size={20} />, path: '/parts' },
   { name: 'OEE', icon: <BarChart3 size={20} />, path: '/oee' },
   { name: 'Consumables', icon: <Package size={20} />, path: '/consumables' },
+  { name: 'Raw Materials', icon: <Layers size={20} />, path: '/raw-materials' },
   { name: 'Forecast', icon: <TrendingUp size={20} />, path: '/forecast' },
   { name: 'Cost Analysis', icon: <Calculator size={20} />, path: '/cost-breakdown' },
 ];
@@ -38,7 +39,6 @@ const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
   const { theme, setTheme } = useTheme();
   
-  // Track scroll position for navbar styling
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 10);
