@@ -1,4 +1,3 @@
-
 import * as React from "react"
 import * as SelectPrimitive from "@radix-ui/react-select"
 import { Check, ChevronDown, ChevronUp, Search } from "lucide-react"
@@ -151,7 +150,7 @@ const SelectContent = React.forwardRef<
         <SelectScrollDownButton />
       </SelectPrimitive.Content>
     </SelectPrimitive.Portal>
-  ))
+  )
 })
 SelectContent.displayName = SelectPrimitive.Content.displayName
 
