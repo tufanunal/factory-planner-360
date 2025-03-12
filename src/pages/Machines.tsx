@@ -1,258 +1,391 @@
+
 import { useState } from 'react';
+import { useData } from '@/contexts/DataContext';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { AlertTriangle, CheckCircle, Layers, PlusCircle } from 'lucide-react';
-import { Machine } from '@/types/machine';
+import { Plus } from 'lucide-react';
 import MachineCard from '@/components/machines/MachineCard';
 import MachineEditModal from '@/components/machines/MachineEditModal';
-import CategoryManager, { DEFAULT_CATEGORY } from '@/components/machines/CategoryManager';
+import { Machine } from '@/types/machine';
 import { toast } from 'sonner';
-import { useData } from '@/contexts/DataContext';
+import { AlertDialog, 
+  AlertDialogAction, 
+  AlertDialogCancel, 
+  AlertDialogContent, 
+  AlertDialogDescription, 
+  AlertDialogFooter, 
+  AlertDialogHeader, 
+  AlertDialogTitle
+} from '@/components/ui/alert-dialog';
+import CategoryManager from '@/components/machines/CategoryManager';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-const MachinesPage = () => {
-  const { machines, setMachines, machineCategories, setMachineCategories } = useData();
+// Helper function to generate unique ID
+const generateId = (): number => {
+  return Date.now();
+};
+
+// Function to generate a random machine
+const generateRandomMachine = (existingIds: number[], category: string): Machine => {
+  // Generate a new unique ID
+  let id = generateId();
+  while (existingIds.includes(id)) {
+    id = generateId();
+  }
   
-  const [editingMachine, setEditingMachine] = useState<Machine | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  // Generate random availability (between 60% and 99%)
+  const availability = Math.floor(Math.random() * 40) + 60;
+  
+  // Generate random setup time between 10 and 60 minutes
+  const setupTime = `${Math.floor(Math.random() * 51) + 10} min`;
+  
+  // Generate maintenance dates
+  const today = new Date();
+  const lastMaintenance = new Date(today);
+  lastMaintenance.setDate(lastMaintenance.getDate() - Math.floor(Math.random() * 30));
+  
+  const nextMaintenance = new Date(today);
+  nextMaintenance.setDate(nextMaintenance.getDate() + Math.floor(Math.random() * 60) + 30);
+  
+  // Random machine names
+  const machineNames = [
+    'CNC Router',
+    'Laser Cutter',
+    'Injection Molder',
+    'Assembly Robot',
+    'Welding Station',
+    'Heat Press',
+    'Hydraulic Press',
+    'Paint Booth',
+    'Conveyor System',
+    'Packaging Machine',
+    'Grinding Machine',
+    'Milling Machine',
+    'Drilling Station',
+    'Lathe',
+    'Sanding Machine'
+  ];
+  
+  // Random status with weighted probabilities
+  const statusOptions: Array<'Operational' | 'Maintenance' | 'Offline'> = [
+    'Operational', 'Operational', 'Operational', 'Operational', 'Operational', 
+    'Operational', 'Operational', 'Maintenance', 'Maintenance', 'Offline'
+  ];
+  const randomStatus = statusOptions[Math.floor(Math.random() * statusOptions.length)];
+  
+  // Generate random name
+  const randomName = machineNames[Math.floor(Math.random() * machineNames.length)];
+  
+  // Generate random hourly cost between 50 and 200
+  const hourlyCost = Math.floor(Math.random() * 151) + 50;
+  
+  // Generate random labor person/hour value between 1 and 4
+  const labourPersonHour = Math.floor(Math.random() * 4) + 1;
+  
+  return {
+    id,
+    name: randomName,
+    status: randomStatus,
+    availability,
+    setupTime,
+    lastMaintenance: lastMaintenance.toISOString().split('T')[0],
+    nextMaintenance: nextMaintenance.toISOString().split('T')[0],
+    category,
+    hourlyCost,
+    labourPersonHour
+  };
+};
 
+const Machines = () => {
+  const { machines, setMachines, machineCategories, setMachineCategories } = useData();
+  const [openMachine, setOpenMachine] = useState<Machine | null>(null);
+  const [isAddingMachine, setIsAddingMachine] = useState(false);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [machineToDelete, setMachineToDelete] = useState<Machine | null>(null);
+  const [isCategoryManagerOpen, setIsCategoryManagerOpen] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  
+  // Calculate stats for machines
+  const totalMachines = machines.length;
+  const operationalMachines = machines.filter(m => m.status === 'Operational').length;
+  const maintenanceMachines = machines.filter(m => m.status === 'Maintenance').length;
+  const offlineMachines = machines.filter(m => m.status === 'Offline').length;
+  
+  const handleAddMachine = () => {
+    setOpenMachine(null);
+    setIsAddingMachine(true);
+  };
+  
   const handleEditMachine = (machine: Machine) => {
-    setEditingMachine(machine);
-    setIsModalOpen(true);
+    setOpenMachine(machine);
+    setIsAddingMachine(true);
   };
-
-  const handleAddNewMachine = () => {
-    setEditingMachine(null);
-    setIsModalOpen(true);
+  
+  const handleDeleteMachine = (machine: Machine) => {
+    setMachineToDelete(machine);
+    setIsDeleteConfirmOpen(true);
   };
-
-  const handleSaveMachine = (updatedMachine: Machine) => {
-    if (updatedMachine.id) {
-      setMachines(machines.map(machine => 
-        machine.id === updatedMachine.id ? updatedMachine : machine
-      ));
+  
+  const confirmDeleteMachine = () => {
+    if (machineToDelete) {
+      setMachines(machines.filter(m => m.id !== machineToDelete.id));
+      toast.success(`Machine ${machineToDelete.name} deleted successfully`);
+      setIsDeleteConfirmOpen(false);
+      setMachineToDelete(null);
+    }
+  };
+  
+  const handleSaveMachine = (machine: Machine) => {
+    const isEditing = !!machines.find(m => m.id === machine.id);
+    
+    if (isEditing) {
+      setMachines(machines.map(m => m.id === machine.id ? machine : m));
     } else {
-      const newMachine = {
-        ...updatedMachine,
-        id: Math.max(0, ...machines.map(m => m.id)) + 1
-      };
-      setMachines([...machines, newMachine]);
-      toast.success('New machine added successfully');
+      setMachines([...machines, { ...machine, id: generateId() }]);
     }
-    setIsModalOpen(false);
+    
+    setIsAddingMachine(false);
+    setOpenMachine(null);
   };
-
-  const handleCategoryChange = (updatedCategories: string[]) => {
-    setMachineCategories(updatedCategories);
+  
+  const handleGenerateRandomMachines = () => {
+    const existingIds = machines.map(m => m.id);
+    const newMachines: Machine[] = [];
     
-    const updatedMachines = machines.map(machine => {
-      if (machine.category && !updatedCategories.includes(machine.category)) {
-        return { ...machine, category: DEFAULT_CATEGORY };
-      }
-      return machine;
-    });
-    
-    if (JSON.stringify(updatedMachines) !== JSON.stringify(machines)) {
-      setMachines(updatedMachines);
-      toast.info('Some machines were updated to the default category');
+    // Generate 5 random machines
+    for (let i = 0; i < 5; i++) {
+      // Randomly select a category from available categories
+      const randomCategory = machineCategories[Math.floor(Math.random() * machineCategories.length)];
+      newMachines.push(generateRandomMachine(existingIds, randomCategory));
     }
+    
+    setMachines([...machines, ...newMachines]);
+    toast.success('5 random machines generated');
   };
-
+  
+  // Filter machines by selected category
+  const filteredMachines = selectedCategory 
+    ? machines.filter(machine => machine.category === selectedCategory)
+    : machines;
+  
   return (
     <DashboardLayout 
       title="Machines" 
-      description="Manage machine availability, setup time and maintenance schedules"
+      description="View and manage all your production machines"
     >
-      <div className="flex justify-between items-center mb-6">
-        <Tabs defaultValue="overview" className="w-full">
-          <div className="flex justify-between items-center">
-            <TabsList className="grid w-[500px] grid-cols-4 animate-fade-in">
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="planning">Planning</TabsTrigger>
-              <TabsTrigger value="maintenance">Maintenance</TabsTrigger>
-              <TabsTrigger value="advanced">Advanced</TabsTrigger>
-            </TabsList>
-            <Button onClick={handleAddNewMachine} className="ml-auto">
-              <PlusCircle className="mr-2 h-4 w-4" /> Add Machine
-            </Button>
-          </div>
-              
-          <TabsContent value="overview" className="animate-slide-up mt-6">
-            {machines.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {machines.map((machine) => (
-                  <MachineCard 
-                    key={machine.id} 
-                    machine={machine} 
-                    onEdit={handleEditMachine} 
-                  />
-                ))}
-              </div>
-            ) : (
-              <Card className="p-8 text-center">
-                <div className="flex flex-col items-center justify-center space-y-3">
-                  <p className="text-muted-foreground">No machines added yet.</p>
-                  <Button onClick={handleAddNewMachine}>
-                    <PlusCircle className="mr-2 h-4 w-4" /> Add Your First Machine
-                  </Button>
-                </div>
-              </Card>
-            )}
-            
-            {machines.length > 0 && (
-              <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
-                <Card className="md:col-span-3">
-                  <CardHeader>
-                    <CardTitle>Machine Availability Overview</CardTitle>
-                    <CardDescription>Average availability of all machines</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="h-[200px] flex items-center justify-center text-center">
-                      <p className="text-muted-foreground">Machine performance charts will be displayed here</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            )}
-          </TabsContent>
-          
-          <TabsContent value="planning" className="animate-slide-up">
-            <Card>
-              <CardHeader>
-                <CardTitle>Production Planning</CardTitle>
-                <CardDescription>Schedule and optimize machine usage</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="h-[400px] flex items-center justify-center text-center">
-                  <div>
-                    <AlertTriangle className="h-10 w-10 text-amber-500 mx-auto mb-4" />
-                    <p className="text-muted-foreground">
-                      Production planning interface will be implemented in the next phase
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="maintenance" className="animate-slide-up">
-            <Card>
-              <CardHeader>
-                <CardTitle>Maintenance Schedule</CardTitle>
-                <CardDescription>Upcoming and past maintenance activities</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {machines.length > 0 ? (
-                  <div className="space-y-4">
-                    {machines.map((machine) => (
-                      <div 
-                        key={`maint-${machine.id}`}
-                        className="p-4 border rounded-lg flex justify-between items-center"
-                      >
-                        <div className="flex items-center">
-                          <div className={`h-10 w-10 rounded-full mr-4 flex items-center justify-center ${
-                            new Date(machine.nextMaintenance) <= new Date() 
-                              ? 'bg-red-100 text-red-600' 
-                              : 'bg-green-100 text-green-600'
-                          }`}>
-                            {new Date(machine.nextMaintenance) <= new Date() 
-                              ? <AlertTriangle className="h-5 w-5" />
-                              : <CheckCircle className="h-5 w-5" />
-                            }
-                          </div>
-                          <div>
-                            <h3 className="font-medium">{machine.name}</h3>
-                            <p className="text-sm text-muted-foreground">
-                              Next scheduled: {machine.nextMaintenance}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Button variant="outline" size="sm" onClick={() => handleEditMachine(machine)}>
-                            Edit
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="p-8 text-center">
-                    <p className="text-muted-foreground">No machines added yet.</p>
-                    <Button onClick={handleAddNewMachine} className="mt-4">
-                      <PlusCircle className="mr-2 h-4 w-4" /> Add Your First Machine
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="advanced" className="animate-slide-up">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="md:col-span-1">
-                <CategoryManager 
-                  onCategoryChange={handleCategoryChange}
-                  machines={machines}
-                />
-              </div>
-              <Card className="md:col-span-2">
-                <CardHeader>
-                  <CardTitle>Machine Categories & Compatibility</CardTitle>
-                  <CardDescription>Configure machine interchangeability and parts compatibility</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {machines.length > 0 ? (
-                    <div className="space-y-4">
-                      {machines.map((machine) => (
-                        <div 
-                          key={`adv-${machine.id}`}
-                          className="p-4 border rounded-lg flex justify-between items-center"
-                        >
-                          <div className="flex items-center">
-                            <div className="h-10 w-10 rounded-full mr-4 flex items-center justify-center bg-blue-100 text-blue-600">
-                              <Layers className="h-5 w-5" />
-                            </div>
-                            <div>
-                              <h3 className="font-medium">{machine.name}</h3>
-                              <p className="text-sm text-muted-foreground">
-                                Category: {machine.category || DEFAULT_CATEGORY} | 
-                                Compatible parts: {machine.compatibleParts?.length || 0}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Button variant="outline" size="sm" onClick={() => handleEditMachine(machine)}>
-                              Edit
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="p-8 text-center">
-                      <p className="text-muted-foreground">No machines added yet.</p>
-                      <Button onClick={handleAddNewMachine} className="mt-4">
-                        <PlusCircle className="mr-2 h-4 w-4" /> Add Your First Machine
-                      </Button>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-        </Tabs>
+      {/* Dashboard Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <Card className="animate-fade-in">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Machines</CardTitle>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              className="h-4 w-4 text-muted-foreground"
+            >
+              <rect width="20" height="14" x="2" y="5" rx="2" />
+              <path d="M2 10h20" />
+            </svg>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{totalMachines}</div>
+          </CardContent>
+        </Card>
+        <Card className="animate-fade-in delay-100">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Operational</CardTitle>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              className="h-4 w-4 text-muted-foreground"
+            >
+              <path d="M12 5v14" />
+              <path d="m5 12 7 7 7-7" />
+            </svg>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">{operationalMachines}</div>
+            <p className="text-xs text-muted-foreground">
+              {totalMachines > 0 
+                ? `${Math.round(operationalMachines / totalMachines * 100)}% of total`
+                : 'No machines'}
+            </p>
+          </CardContent>
+        </Card>
+        <Card className="animate-fade-in delay-200">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">In Maintenance</CardTitle>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              className="h-4 w-4 text-muted-foreground"
+            >
+              <path d="M12 5v14" />
+              <path d="m5 12 7 7 7-7" />
+            </svg>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-yellow-600">{maintenanceMachines}</div>
+            <p className="text-xs text-muted-foreground">
+              {totalMachines > 0 
+                ? `${Math.round(maintenanceMachines / totalMachines * 100)}% of total`
+                : 'No machines'}
+            </p>
+          </CardContent>
+        </Card>
+        <Card className="animate-fade-in delay-300">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Offline</CardTitle>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              className="h-4 w-4 text-muted-foreground"
+            >
+              <path d="M12 5v14" />
+              <path d="m5 12 7 7 7-7" />
+            </svg>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-red-600">{offlineMachines}</div>
+            <p className="text-xs text-muted-foreground">
+              {totalMachines > 0 
+                ? `${Math.round(offlineMachines / totalMachines * 100)}% of total`
+                : 'No machines'}
+            </p>
+          </CardContent>
+        </Card>
       </div>
-
-      <MachineEditModal 
-        machine={editingMachine} 
-        open={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
+      
+      {/* Category filters and management */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
+        <div>
+          <Tabs 
+            defaultValue={selectedCategory || "all"} 
+            className="w-full"
+            onValueChange={(value) => setSelectedCategory(value === "all" ? null : value)}
+          >
+            <TabsList className="mb-4">
+              <TabsTrigger value="all">All</TabsTrigger>
+              {machineCategories.map((category) => (
+                <TabsTrigger key={category} value={category}>
+                  {category}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+        </div>
+        
+        <div className="flex flex-wrap justify-end gap-2">
+          <Button 
+            variant="outline" 
+            onClick={() => setIsCategoryManagerOpen(true)}
+          >
+            Manage Categories
+          </Button>
+          <Button 
+            variant="secondary" 
+            onClick={handleGenerateRandomMachines}
+          >
+            Generate Random
+          </Button>
+          <Button onClick={handleAddMachine}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Machine
+          </Button>
+        </div>
+      </div>
+      
+      {/* Machines Grid */}
+      {filteredMachines.length === 0 ? (
+        <Card className="animate-fade-in">
+          <CardHeader>
+            <CardTitle>No Machines</CardTitle>
+            <CardDescription>
+              {selectedCategory 
+                ? `No machines found in the "${selectedCategory}" category.`
+                : 'No machines have been added yet.'}
+            </CardDescription>
+          </CardHeader>
+          <CardFooter>
+            <Button onClick={handleAddMachine}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Machine
+            </Button>
+          </CardFooter>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          {filteredMachines.map((machine, index) => (
+            <MachineCard
+              key={machine.id}
+              machine={machine}
+              onEdit={() => handleEditMachine(machine)}
+              onDelete={() => handleDeleteMachine(machine)}
+              className={`animate-fade-up delay-${index * 100}`}
+            />
+          ))}
+        </div>
+      )}
+      
+      {/* Modals */}
+      <MachineEditModal
+        machine={openMachine}
+        isOpen={isAddingMachine}
+        onClose={() => setIsAddingMachine(false)}
         onSave={handleSaveMachine}
-        categories={machineCategories} 
       />
+      
+      <CategoryManager
+        isOpen={isCategoryManagerOpen}
+        onClose={() => setIsCategoryManagerOpen(false)}
+        categories={machineCategories}
+        setCategories={setMachineCategories}
+        itemType="machine"
+      />
+      
+      <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the machine 
+              &quot;{machineToDelete?.name}&quot; and all associated data.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDeleteMachine}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </DashboardLayout>
   );
 };
 
-export default MachinesPage;
+export default Machines;
