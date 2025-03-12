@@ -57,7 +57,6 @@ function Calendar({
         IconRight: ({ ..._props }) => <ChevronRight className="h-4 w-4" />,
       }}
       showWeekNumber={true}
-      weekNumberLabel="Week"
       formatters={{
         formatWeekNumber: (weekNumber) => `${weekNumber}`,
       }}

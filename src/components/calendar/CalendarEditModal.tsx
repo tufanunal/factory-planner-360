@@ -16,7 +16,10 @@ import { Switch } from '@/components/ui/switch';
 import { Calendar as CalendarType, WorkdaysPattern } from '@/types/calendar';
 import { toast } from 'sonner';
 import { DEFAULT_WORKDAYS_PATTERN } from '@/contexts/DataContext';
-import { Search } from 'lucide-react';
+import {
+  FilterableSelect,
+  SelectItem
+} from "@/components/ui/select";
 
 // ISO 3166-1 country codes (both alpha-2 and alpha-3)
 const COUNTRY_CODES = [
@@ -295,8 +298,6 @@ const CalendarEditModal: React.FC<CalendarEditModalProps> = ({
     holidays: [],
     workdaysPattern: { ...DEFAULT_WORKDAYS_PATTERN },
   });
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filteredCountries, setFilteredCountries] = useState(COUNTRY_CODES);
 
   useEffect(() => {
     if (calendar) {
@@ -316,20 +317,6 @@ const CalendarEditModal: React.FC<CalendarEditModalProps> = ({
       });
     }
   }, [calendar, isOpen, isDefault]);
-
-  // Filter countries based on search
-  useEffect(() => {
-    if (!searchQuery) {
-      setFilteredCountries(COUNTRY_CODES);
-      return;
-    }
-    
-    const filtered = COUNTRY_CODES.filter(country => 
-      country.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-      country.code.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-    setFilteredCountries(filtered);
-  }, [searchQuery]);
 
   const handleChange = (field: keyof CalendarType, value: any) => {
     setFormData(prev => ({
@@ -399,30 +386,19 @@ const CalendarEditModal: React.FC<CalendarEditModalProps> = ({
               <Label htmlFor="countryCode" className="text-right">
                 Country
               </Label>
-              <div className="col-span-3 space-y-2">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search for a country..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-                <select
-                  id="countryCode"
+              <div className="col-span-3">
+                <FilterableSelect
                   value={formData.countryCode}
-                  onChange={(e) => handleChange('countryCode', e.target.value)}
-                  className="w-full flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  onValueChange={(value) => handleChange('countryCode', value)}
+                  placeholder="Select a country"
                   disabled={formData.isDefault}
-                  size={5}
                 >
-                  {filteredCountries.map((country) => (
-                    <option key={country.code} value={country.code}>
+                  {COUNTRY_CODES.map((country) => (
+                    <SelectItem key={country.code} value={country.code}>
                       {country.name} ({country.code})
-                    </option>
+                    </SelectItem>
                   ))}
-                </select>
+                </FilterableSelect>
               </div>
             </div>
             <div className="grid grid-cols-1 gap-4 mt-4">

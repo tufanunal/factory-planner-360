@@ -343,7 +343,6 @@ const CalendarPage = () => {
                   DayContent: ({ date }) => renderCalendarDay(date),
                 }}
                 showWeekNumber={true}
-                weekNumberLabel="Week"
                 formatters={{
                   formatWeekNumber: (weekNumber) => `${weekNumber}`,
                 }}
