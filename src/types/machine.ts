@@ -8,5 +8,6 @@ export interface Machine {
   lastMaintenance: string;
   nextMaintenance: string;
   category?: string;
-  compatibleParts?: number[];
+  hourlyCost?: number;
+  labourPersonHour?: number;
 }

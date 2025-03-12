@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { Machine } from '@/types/machine';
 import { DEFAULT_CATEGORY } from './CategoryManager';
 import { useData } from '@/contexts/DataContext';
+import { Euro } from 'lucide-react';
 
 interface MachineEditModalProps {
   machine: Machine | null;
@@ -37,14 +38,17 @@ const MachineEditModal = ({
     lastMaintenance: '',
     nextMaintenance: '',
     category: DEFAULT_CATEGORY,
-    compatibleParts: [],
+    hourlyCost: 0,
+    labourPersonHour: 0,
   });
 
   useEffect(() => {
     if (machine) {
       setFormData({
         ...machine,
-        category: machine.category || DEFAULT_CATEGORY
+        category: machine.category || DEFAULT_CATEGORY,
+        hourlyCost: machine.hourlyCost || 0,
+        labourPersonHour: machine.labourPersonHour || 0
       });
     } else {
       setFormData({
@@ -56,12 +60,13 @@ const MachineEditModal = ({
         lastMaintenance: new Date().toISOString().split('T')[0],
         nextMaintenance: new Date().toISOString().split('T')[0],
         category: DEFAULT_CATEGORY,
-        compatibleParts: [],
+        hourlyCost: 0,
+        labourPersonHour: 0
       });
     }
   }, [machine]);
 
-  const handleChange = (field: keyof Machine, value: string | number | number[]) => {
+  const handleChange = (field: keyof Machine, value: string | number) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -72,17 +77,6 @@ const MachineEditModal = ({
     e.preventDefault();
     onSave(formData);
     toast.success(machine ? 'Machine updated successfully' : 'Machine added successfully');
-  };
-
-  const handleCompatiblePartsChange = (value: string) => {
-    const partIds = value
-      .split(',')
-      .map(id => id.trim())
-      .filter(id => id !== '')
-      .map(id => parseInt(id, 10))
-      .filter(id => !isNaN(id));
-    
-    handleChange('compatibleParts', partIds);
   };
 
   return (
@@ -186,16 +180,45 @@ const MachineEditModal = ({
               </FilterableSelect>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="compatibleParts" className="text-right">
-                Compatible Parts
+              <Label htmlFor="hourlyCost" className="text-right">
+                Hourly Cost
               </Label>
-              <Input
-                id="compatibleParts"
-                value={formData.compatibleParts?.join(', ') || ''}
-                onChange={(e) => handleCompatiblePartsChange(e.target.value)}
-                className="col-span-3"
-                placeholder="Enter part IDs separated by commas"
-              />
+              <div className="col-span-3 relative">
+                <Input
+                  id="hourlyCost"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={formData.hourlyCost || ''}
+                  onChange={(e) => handleChange('hourlyCost', parseFloat(e.target.value) || 0)}
+                  className="pl-8"
+                />
+                <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">
+                  <Euro className="h-4 w-4" />
+                </div>
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">
+                  /h
+                </div>
+              </div>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="labourPersonHour" className="text-right">
+                Labour
+              </Label>
+              <div className="col-span-3 relative">
+                <Input
+                  id="labourPersonHour"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={formData.labourPersonHour || ''}
+                  onChange={(e) => handleChange('labourPersonHour', parseFloat(e.target.value) || 0)}
+                  className="pr-14"
+                />
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">
+                  person/h
+                </div>
+              </div>
             </div>
           </div>
           <DialogFooter>
