@@ -25,6 +25,15 @@ export interface WorkdaysPattern {
   sunday: boolean;
 }
 
+// New type for shift scheduling
+export interface ShiftSchedule {
+  [key: string]: { // date in ISO format (YYYY-MM-DD)
+    shifts: {
+      [shiftId: number]: boolean; // shiftId -> isActive mapping
+    };
+  };
+}
+
 export interface Calendar {
   id: string;
   name: string;
@@ -32,4 +41,5 @@ export interface Calendar {
   isDefault: boolean;
   holidays: Holiday[];
   workdaysPattern: WorkdaysPattern;
+  shiftSchedule?: ShiftSchedule; // Optional for backward compatibility
 }

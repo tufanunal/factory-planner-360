@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useData } from '@/contexts/DataContext';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Calendar } from '@/components/ui/calendar';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -16,13 +16,14 @@ import {
   Info, 
   Plus, 
   Trash2, 
-  Users 
+  Users
 } from 'lucide-react';
-import { format, isSameDay, isWeekend } from 'date-fns';
+import { format, isSameDay, isWeekend, addDays, parseISO } from 'date-fns';
 import ShiftEditModal from '@/components/calendar/ShiftEditModal';
 import HolidayEditModal from '@/components/calendar/HolidayEditModal';
 import CalendarEditModal from '@/components/calendar/CalendarEditModal';
-import { Holiday, Shift, Calendar as CalendarType } from '@/types/calendar';
+import WeekDetailView from '@/components/calendar/WeekDetailView';
+import { Holiday, Shift, Calendar as CalendarType, ShiftSchedule } from '@/types/calendar';
 import { toast } from 'sonner';
 import {
   AlertDialog,
@@ -161,6 +162,29 @@ const CalendarPage = () => {
     setDeleteConfirmOpen(true);
   };
 
+  // Handle shift schedule updates
+  const handleUpdateShiftSchedule = (dateStr: string, shiftId: number, isActive: boolean) => {
+    const updatedCalendars = calendars.map(cal => {
+      if (cal.id === activeCalendarId) {
+        // Create a new shift schedule if it doesn't exist
+        const shiftSchedule: ShiftSchedule = cal.shiftSchedule || {};
+        
+        // Create or update the entry for this date
+        shiftSchedule[dateStr] = shiftSchedule[dateStr] || { shifts: {} };
+        shiftSchedule[dateStr].shifts[shiftId] = isActive;
+        
+        return {
+          ...cal,
+          shiftSchedule
+        };
+      }
+      return cal;
+    });
+    
+    setCalendars(updatedCalendars);
+    toast.success(`Shift schedule updated for ${format(parseISO(dateStr), 'MMM d, yyyy')}`);
+  };
+
   // Handle deletion confirmation
   const confirmDelete = () => {
     if (!itemToDelete) return;
@@ -202,29 +226,29 @@ const CalendarPage = () => {
 
   // Helper function to check if a date is a holiday
   const isHoliday = (date: Date) => {
-    return activeCalendar.holidays.some(holiday => 
+    return activeCalendar?.holidays?.some(holiday => 
       isSameDay(new Date(holiday.date), date)
-    );
+    ) || false;
   };
 
   // Helper function to check if a date is a workday
   const isWorkday = (date: Date) => {
     const dayOfWeek = format(date, 'EEEE').toLowerCase();
-    return activeCalendar.workdaysPattern[dayOfWeek as keyof typeof activeCalendar.workdaysPattern];
+    return activeCalendar?.workdaysPattern?.[dayOfWeek as keyof typeof activeCalendar.workdaysPattern] || false;
   };
 
   // Helper function to get holiday for a date
   const getHolidayForDate = (date: Date) => {
-    return activeCalendar.holidays.find(holiday => 
+    return activeCalendar?.holidays?.find(holiday => 
       isSameDay(new Date(holiday.date), date)
     );
   };
 
   // Calendar day renderer with holiday highlighting
-  const renderCalendarDay = (day: Date) => {
-    const isToday = isSameDay(day, new Date());
-    const holiday = getHolidayForDate(day);
-    const isNonWorkingDay = !isWorkday(day);
+  const renderCalendarDay = (date: Date) => {
+    const isToday = isSameDay(date, new Date());
+    const holiday = getHolidayForDate(date);
+    const isNonWorkingDay = !isWorkday(date);
     
     const classes = [
       "relative",
@@ -241,13 +265,13 @@ const CalendarPage = () => {
                 <div className="w-2 h-2 rounded-full bg-red-500"></div>
               </div>
             )}
-            {day.getDate()}
+            {date.getDate()}
           </div>
         </div>
       );
     }
     
-    return day.getDate();
+    return <>{date.getDate()}</>;
   };
 
   // Selected day info
@@ -278,10 +302,22 @@ const CalendarPage = () => {
             </SelectContent>
           </Select>
         </div>
-        <Button size="sm" onClick={handleAddCalendar}>
-          <Globe className="mr-2 h-4 w-4" />
-          Add Calendar
-        </Button>
+        <div className="flex space-x-2">
+          <Button 
+            size="sm" 
+            variant="outline" 
+            onClick={() => handleDeleteCalendar(activeCalendarId)}
+            disabled={activeCalendar.isDefault}
+            className="text-destructive hover:text-destructive"
+          >
+            <Trash2 className="mr-2 h-4 w-4" />
+            Delete Calendar
+          </Button>
+          <Button size="sm" onClick={handleAddCalendar}>
+            <Globe className="mr-2 h-4 w-4" />
+            Add Calendar
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -374,12 +410,21 @@ const CalendarPage = () => {
         </Card>
         
         <div className="col-span-1 lg:col-span-2">
-          <Tabs defaultValue="shifts">
+          <Tabs defaultValue="weekdetails">
             <TabsList className="grid grid-cols-3 mb-6 animate-fade-in">
+              <TabsTrigger value="weekdetails">Week Details</TabsTrigger>
               <TabsTrigger value="shifts">Shifts</TabsTrigger>
               <TabsTrigger value="holidays">Holidays</TabsTrigger>
-              <TabsTrigger value="calendars">Calendars</TabsTrigger>
             </TabsList>
+            
+            <TabsContent value="weekdetails" className="animate-slide-up">
+              <WeekDetailView 
+                calendar={activeCalendar}
+                shifts={shifts}
+                selectedDate={selectedDate || new Date()}
+                onUpdateShiftSchedule={handleUpdateShiftSchedule}
+              />
+            </TabsContent>
             
             <TabsContent value="shifts" className="animate-slide-up">
               <Card>
@@ -514,90 +559,6 @@ const CalendarPage = () => {
                         </div>
                       ))
                     )}
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-            
-            <TabsContent value="calendars" className="animate-slide-up">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <div>
-                    <CardTitle className="flex items-center">
-                      <Globe className="mr-2 h-5 w-5" />
-                      Calendars
-                    </CardTitle>
-                    <CardDescription>
-                      Manage multiple calendars for different countries
-                    </CardDescription>
-                  </div>
-                  <Button onClick={handleAddCalendar} size="sm">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Calendar
-                  </Button>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {calendars.map((calendar) => (
-                      <div 
-                        key={calendar.id}
-                        className={`flex items-center justify-between p-4 rounded-lg border transition-all hover:shadow-sm ${activeCalendarId === calendar.id ? 'bg-primary/5 border-primary/20' : ''}`}
-                      >
-                        <div className="flex items-center">
-                          <div className={`w-10 h-10 rounded-full flex items-center justify-center mr-4 ${activeCalendarId === calendar.id ? 'bg-primary/20 text-primary' : 'bg-gray-100 text-gray-600'}`}>
-                            <Globe className="h-5 w-5" />
-                          </div>
-                          <div>
-                            <div className="flex items-center">
-                              <h3 className="font-medium">{calendar.name}</h3>
-                              {calendar.isDefault && (
-                                <Badge variant="outline" className="ml-2 text-xs">Default</Badge>
-                              )}
-                              {activeCalendarId === calendar.id && (
-                                <Badge variant="secondary" className="ml-2 text-xs">Active</Badge>
-                              )}
-                            </div>
-                            <div className="flex items-center text-sm text-muted-foreground mt-1">
-                              <span className="mr-3">{calendar.countryCode}</span>
-                              <span className="flex items-center">
-                                <CalendarDays className="h-3.5 w-3.5 mr-1" />
-                                {calendar.holidays.length} holidays
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex gap-2">
-                          {activeCalendarId !== calendar.id && (
-                            <Button 
-                              size="sm"
-                              variant="outline"
-                              onClick={() => setActiveCalendarId(calendar.id)}
-                            >
-                              Activate
-                            </Button>
-                          )}
-                          
-                          <Button 
-                            size="sm" 
-                            variant="ghost" 
-                            onClick={() => handleEditCalendar(calendar)}
-                            disabled={calendar.isDefault}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          
-                          <Button 
-                            size="sm" 
-                            variant="ghost" 
-                            className="text-destructive hover:text-destructive"
-                            onClick={() => handleDeleteCalendar(calendar.id)}
-                            disabled={calendar.isDefault}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
                   </div>
                 </CardContent>
               </Card>
