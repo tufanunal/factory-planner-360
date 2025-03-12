@@ -64,11 +64,6 @@ const CalendarPage = () => {
   const activeCalendar = calendars.find(cal => cal.id === activeCalendarId) || calendars[0];
   
   // Handle shift operations
-  const handleAddShift = () => {
-    setSelectedShift(null);
-    setIsShiftModalOpen(true);
-  };
-
   const handleEditShift = (shift: Shift) => {
     setSelectedShift(shift);
     setIsShiftModalOpen(true);
@@ -81,11 +76,6 @@ const CalendarPage = () => {
       setShifts([...shifts, shift]);
     }
     setIsShiftModalOpen(false);
-  };
-
-  const handleDeleteShift = (shiftId: number) => {
-    setItemToDelete({ type: 'shift', id: shiftId });
-    setDeleteConfirmOpen(true);
   };
 
   // Handle holiday operations
@@ -244,7 +234,7 @@ const CalendarPage = () => {
     );
   };
 
-  // Calendar day renderer with holiday highlighting
+  // Calendar day renderer with holiday highlighting - no more red dot
   const renderCalendarDay = (date: Date) => {
     const isToday = isSameDay(date, new Date());
     const holiday = getHolidayForDate(date);
@@ -259,14 +249,7 @@ const CalendarPage = () => {
     if (classes) {
       return (
         <div className={classes}>
-          <div className="relative h-full w-full">
-            {holiday && (
-              <div className="absolute -top-1 -right-1">
-                <div className="w-2 h-2 rounded-full bg-red-500"></div>
-              </div>
-            )}
-            {date.getDate()}
-          </div>
+          {date.getDate()}
         </div>
       );
     }
@@ -359,6 +342,11 @@ const CalendarPage = () => {
                 components={{
                   DayContent: ({ date }) => renderCalendarDay(date),
                 }}
+                showWeekNumber={true}
+                weekNumberLabel="Week"
+                formatters={{
+                  formatWeekNumber: (weekNumber) => `${weekNumber}`,
+                }}
               />
             </div>
             
@@ -435,19 +423,15 @@ const CalendarPage = () => {
                       Shift Planning
                     </CardTitle>
                     <CardDescription>
-                      Configure daily shifts and assign teams
+                      Configure shift times to adjust work schedules
                     </CardDescription>
                   </div>
-                  <Button onClick={handleAddShift} size="sm">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Shift
-                  </Button>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
                     {shifts.length === 0 ? (
                       <div className="text-center py-6 text-muted-foreground">
-                        No shifts defined yet. Click "Add Shift" to create one.
+                        No shifts defined yet.
                       </div>
                     ) : (
                       shifts.map((shift) => {
@@ -480,14 +464,6 @@ const CalendarPage = () => {
                                 onClick={() => handleEditShift(shift)}
                               >
                                 <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button 
-                                size="sm" 
-                                variant="ghost" 
-                                className="text-destructive hover:text-destructive"
-                                onClick={() => handleDeleteShift(shift.id)}
-                              >
-                                <Trash2 className="h-4 w-4" />
                               </Button>
                             </div>
                           </div>

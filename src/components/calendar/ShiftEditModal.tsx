@@ -13,8 +13,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Shift } from '@/types/calendar';
-import { Clock, Users } from 'lucide-react';
+import { Clock, Users, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { useData } from '@/contexts/DataContext';
 
 interface ShiftEditModalProps {
   shift: Shift | null;
@@ -33,6 +34,7 @@ const COLORS = [
 ];
 
 const ShiftEditModal: React.FC<ShiftEditModalProps> = ({ shift, isOpen, onClose, onSave }) => {
+  const { shifts } = useData();
   const [formData, setFormData] = useState<Shift>({
     id: 0,
     name: '',
@@ -41,6 +43,7 @@ const ShiftEditModal: React.FC<ShiftEditModalProps> = ({ shift, isOpen, onClose,
     team: '',
     color: COLORS[0].bg + ' ' + COLORS[0].text,
   });
+  const [showCircularWarning, setShowCircularWarning] = useState(false);
 
   useEffect(() => {
     if (shift) {
@@ -64,11 +67,79 @@ const ShiftEditModal: React.FC<ShiftEditModalProps> = ({ shift, isOpen, onClose,
       ...prev,
       [field]: value
     }));
+    
+    // Check if the change affects circular relationship
+    if (field === 'startTime' || field === 'endTime') {
+      setShowCircularWarning(true);
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Find shifted shifts based on the circular relationship
+    const morningShift = shifts.find(s => s.name.toLowerCase().includes('morning'));
+    const afternoonShift = shifts.find(s => s.name.toLowerCase().includes('afternoon'));
+    const nightShift = shifts.find(s => s.name.toLowerCase().includes('night'));
+    
+    // Save the current shift
     onSave(formData);
+    
+    // Apply circular time updates for related shifts if this shift was modified
+    if (shift && (shift.startTime !== formData.startTime || shift.endTime !== formData.endTime)) {
+      const updatedShifts: Shift[] = [];
+      
+      if (formData.id === morningShift?.id) {
+        // If morning shift changed
+        if (afternoonShift) {
+          updatedShifts.push({
+            ...afternoonShift,
+            startTime: formData.endTime // B
+          });
+        }
+        if (nightShift) {
+          updatedShifts.push({
+            ...nightShift,
+            endTime: formData.startTime // A
+          });
+        }
+      } else if (formData.id === afternoonShift?.id) {
+        // If afternoon shift changed
+        if (nightShift) {
+          updatedShifts.push({
+            ...nightShift,
+            startTime: formData.endTime // C
+          });
+        }
+        if (morningShift) {
+          updatedShifts.push({
+            ...morningShift,
+            endTime: formData.startTime // B
+          });
+        }
+      } else if (formData.id === nightShift?.id) {
+        // If night shift changed
+        if (morningShift) {
+          updatedShifts.push({
+            ...morningShift,
+            startTime: formData.endTime // A
+          });
+        }
+        if (afternoonShift) {
+          updatedShifts.push({
+            ...afternoonShift,
+            endTime: formData.startTime // C
+          });
+        }
+      }
+      
+      // Save the related shifts
+      if (updatedShifts.length > 0) {
+        updatedShifts.forEach(s => onSave(s));
+        toast.info(`Updated ${updatedShifts.length} related shifts to maintain circular timing`);
+      }
+    }
+    
     toast.success(shift ? 'Shift updated successfully' : 'Shift added successfully');
   };
 
@@ -79,7 +150,7 @@ const ShiftEditModal: React.FC<ShiftEditModalProps> = ({ shift, isOpen, onClose,
           <DialogHeader>
             <DialogTitle>{shift ? 'Edit Shift' : 'Add New Shift'}</DialogTitle>
             <DialogDescription>
-              {shift ? 'Modify this shift\'s details' : 'Create a new shift for your schedule'}
+              {shift ? 'Modify this shift\'s details. Changing times will affect other shifts.' : 'Create a new shift for your schedule'}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -94,6 +165,7 @@ const ShiftEditModal: React.FC<ShiftEditModalProps> = ({ shift, isOpen, onClose,
                 className="col-span-3"
                 placeholder="Morning Shift"
                 required
+                readOnly={true} // Prevent name changes to maintain relationships
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
@@ -128,6 +200,17 @@ const ShiftEditModal: React.FC<ShiftEditModalProps> = ({ shift, isOpen, onClose,
                 />
               </div>
             </div>
+            
+            {showCircularWarning && (
+              <div className="col-span-4 p-3 bg-yellow-50 border border-yellow-100 rounded-md flex items-start">
+                <AlertCircle className="h-5 w-5 text-yellow-500 mr-2 flex-shrink-0 mt-0.5" />
+                <div className="text-sm text-yellow-700">
+                  <strong>Note:</strong> Changing shift times will automatically update connected shifts 
+                  to maintain the circular relationship (Morning → Afternoon → Night → Morning).
+                </div>
+              </div>
+            )}
+            
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="team" className="text-right">
                 Team
