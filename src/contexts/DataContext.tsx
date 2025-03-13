@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Machine } from '@/types/machine';
 import { Part } from '@/types/part';
@@ -5,6 +6,8 @@ import { Consumable } from '@/types/consumable';
 import { RawMaterial } from '@/types/rawMaterial';
 import { Calendar, Shift, Holiday, WorkdaysPattern } from '@/types/calendar';
 import { DEFAULT_CATEGORY } from '@/components/machines/CategoryManager';
+import db from '@/services/db/DatabaseService';
+import { toast } from 'sonner';
 
 // Default workdays pattern (Mon-Fri)
 export const DEFAULT_WORKDAYS_PATTERN: WorkdaysPattern = {
@@ -58,6 +61,9 @@ interface DataContextType {
   setCalendars: React.Dispatch<React.SetStateAction<Calendar[]>>;
   activeCalendarId: string;
   setActiveCalendarId: React.Dispatch<React.SetStateAction<string>>;
+  
+  // Database status
+  isLoading: boolean;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -79,175 +85,238 @@ const DEFAULT_CALENDAR: Calendar = {
 };
 
 export function DataProvider({ children }: { children: React.ReactNode }) {
+  // Database loading state
+  const [isLoading, setIsLoading] = useState(true);
+  
   // Initialize machines state
-  const [machines, setMachines] = useState<Machine[]>(() => {
-    try {
-      const savedMachines = localStorage.getItem('machines');
-      return savedMachines ? JSON.parse(savedMachines) : [];
-    } catch (error) {
-      console.error('Error loading machines from localStorage:', error);
-      return [];
-    }
-  });
+  const [machines, setMachines] = useState<Machine[]>([]);
+  const [parts, setParts] = useState<Part[]>([]);
+  const [machineCategories, setMachineCategories] = useState<string[]>([DEFAULT_CATEGORY]);
+  const [partCategories, setPartCategories] = useState<string[]>([DEFAULT_CATEGORY]);
+  const [units, setUnits] = useState<string[]>(DEFAULT_UNITS);
+  const [consumables, setConsumables] = useState<Consumable[]>([]);
+  const [rawMaterials, setRawMaterials] = useState<RawMaterial[]>([]);
+  const [shifts, setShifts] = useState<Shift[]>(DEFAULT_SHIFTS);
+  const [calendars, setCalendars] = useState<Calendar[]>([DEFAULT_CALENDAR]);
+  const [activeCalendarId, setActiveCalendarId] = useState<string>('default');
 
-  // Initialize parts state - no default data
-  const [parts, setParts] = useState<Part[]>(() => {
-    try {
-      const savedParts = localStorage.getItem('parts');
-      return savedParts ? JSON.parse(savedParts) : [];
-    } catch (error) {
-      console.error('Error loading parts from localStorage:', error);
-      return [];
-    }
-  });
-
-  // Initialize machine categories
-  const [machineCategories, setMachineCategories] = useState<string[]>(() => {
-    try {
-      const savedCategories = localStorage.getItem('machineCategories');
-      return savedCategories ? JSON.parse(savedCategories) : [DEFAULT_CATEGORY];
-    } catch (error) {
-      console.error('Error loading machine categories from localStorage:', error);
-      return [DEFAULT_CATEGORY];
-    }
-  });
-
-  // Initialize part categories
-  const [partCategories, setPartCategories] = useState<string[]>(() => {
-    try {
-      const savedCategories = localStorage.getItem('partCategories');
-      return savedCategories ? JSON.parse(savedCategories) : [DEFAULT_CATEGORY];
-    } catch (error) {
-      console.error('Error loading part categories from localStorage:', error);
-      return [DEFAULT_CATEGORY];
-    }
-  });
-
-  // Initialize units
-  const [units, setUnits] = useState<string[]>(() => {
-    try {
-      const savedUnits = localStorage.getItem('units');
-      return savedUnits ? JSON.parse(savedUnits) : DEFAULT_UNITS;
-    } catch (error) {
-      console.error('Error loading units from localStorage:', error);
-      return DEFAULT_UNITS;
-    }
-  });
-
-  // Initialize consumables
-  const [consumables, setConsumables] = useState<Consumable[]>(() => {
-    try {
-      const savedConsumables = localStorage.getItem('consumables');
-      return savedConsumables ? JSON.parse(savedConsumables) : [];
-    } catch (error) {
-      console.error('Error loading consumables from localStorage:', error);
-      return [];
-    }
-  });
-
-  // Initialize raw materials
-  const [rawMaterials, setRawMaterials] = useState<RawMaterial[]>(() => {
-    try {
-      const savedRawMaterials = localStorage.getItem('rawMaterials');
-      return savedRawMaterials ? JSON.parse(savedRawMaterials) : [];
-    } catch (error) {
-      console.error('Error loading raw materials from localStorage:', error);
-      return [];
-    }
-  });
-
-  // Initialize shifts
-  const [shifts, setShifts] = useState<Shift[]>(() => {
-    try {
-      const savedShifts = localStorage.getItem('shifts');
-      return savedShifts ? JSON.parse(savedShifts) : DEFAULT_SHIFTS;
-    } catch (error) {
-      console.error('Error loading shifts from localStorage:', error);
-      return DEFAULT_SHIFTS;
-    }
-  });
-
-  // Initialize calendars
-  const [calendars, setCalendars] = useState<Calendar[]>(() => {
-    try {
-      const savedCalendars = localStorage.getItem('calendars');
-      const parsedCalendars = savedCalendars ? JSON.parse(savedCalendars) : [DEFAULT_CALENDAR];
-      
-      // Convert date strings back to Date objects
-      return parsedCalendars.map((calendar: any) => ({
-        ...calendar,
-        holidays: calendar.holidays.map((holiday: any) => ({
-          ...holiday,
-          date: new Date(holiday.date)
-        }))
-      }));
-    } catch (error) {
-      console.error('Error loading calendars from localStorage:', error);
-      return [DEFAULT_CALENDAR];
-    }
-  });
-
-  // Active calendar ID
-  const [activeCalendarId, setActiveCalendarId] = useState<string>(() => {
-    try {
-      const savedActiveCalendarId = localStorage.getItem('activeCalendarId');
-      return savedActiveCalendarId || 'default';
-    } catch (error) {
-      console.error('Error loading active calendar ID from localStorage:', error);
-      return 'default';
-    }
-  });
-
-  // Ensure localStorage is updated whenever state changes
+  // Initialize database and load data
   useEffect(() => {
-    localStorage.setItem('machines', JSON.stringify(machines));
-  }, [machines]);
+    const initializeData = async () => {
+      try {
+        setIsLoading(true);
+        
+        // Initialize the database
+        await db.init();
+        
+        // Load machines
+        const dbMachines = await db.getMachines();
+        setMachines(dbMachines.length > 0 ? dbMachines : []);
+        
+        // Load parts
+        const dbParts = await db.getParts();
+        setParts(dbParts.length > 0 ? dbParts : []);
+        
+        // Load machine categories
+        const dbMachineCategories = await db.getCategories('machine');
+        setMachineCategories(dbMachineCategories.length > 0 ? dbMachineCategories : [DEFAULT_CATEGORY]);
+        
+        // Load part categories
+        const dbPartCategories = await db.getCategories('part');
+        setPartCategories(dbPartCategories.length > 0 ? dbPartCategories : [DEFAULT_CATEGORY]);
+        
+        // Load units
+        const dbUnits = await db.getUnits();
+        setUnits(dbUnits.length > 0 ? dbUnits : DEFAULT_UNITS);
+        
+        // Load consumables
+        const dbConsumables = await db.getConsumables();
+        setConsumables(dbConsumables.length > 0 ? dbConsumables : []);
+        
+        // Load raw materials
+        const dbRawMaterials = await db.getRawMaterials();
+        setRawMaterials(dbRawMaterials.length > 0 ? dbRawMaterials : []);
+        
+        // Load shifts
+        const dbShifts = await db.getShifts();
+        setShifts(dbShifts.length > 0 ? dbShifts : DEFAULT_SHIFTS);
+        
+        // Load calendars
+        const dbCalendars = await db.getCalendars();
+        setCalendars(dbCalendars.length > 0 ? dbCalendars : [DEFAULT_CALENDAR]);
+        
+        // Load active calendar ID
+        const dbActiveCalendarId = await db.getSetting('activeCalendarId');
+        setActiveCalendarId(dbActiveCalendarId || 'default');
+        
+        setIsLoading(false);
+      } catch (error) {
+        console.error('Error initializing data:', error);
+        toast.error('Failed to load data');
+        setIsLoading(false);
+      }
+    };
+    
+    initializeData();
+  }, []);
 
+  // Save machines to the database when they change
   useEffect(() => {
-    localStorage.setItem('parts', JSON.stringify(parts));
-  }, [parts]);
+    if (!isLoading && machines.length > 0) {
+      const saveMachines = async () => {
+        try {
+          await db.saveItems('machines', machines);
+        } catch (error) {
+          console.error('Error saving machines:', error);
+          toast.error('Failed to save machines');
+        }
+      };
+      saveMachines();
+    }
+  }, [machines, isLoading]);
 
+  // Save parts to the database
   useEffect(() => {
-    localStorage.setItem('machineCategories', JSON.stringify(machineCategories));
-  }, [machineCategories]);
+    if (!isLoading && parts.length > 0) {
+      const saveParts = async () => {
+        try {
+          await db.saveItems('parts', parts);
+        } catch (error) {
+          console.error('Error saving parts:', error);
+          toast.error('Failed to save parts');
+        }
+      };
+      saveParts();
+    }
+  }, [parts, isLoading]);
 
+  // Save machine categories
   useEffect(() => {
-    localStorage.setItem('partCategories', JSON.stringify(partCategories));
-  }, [partCategories]);
+    if (!isLoading) {
+      const saveCategories = async () => {
+        try {
+          await db.saveCategories('machine', machineCategories);
+        } catch (error) {
+          console.error('Error saving machine categories:', error);
+        }
+      };
+      saveCategories();
+    }
+  }, [machineCategories, isLoading]);
 
+  // Save part categories
   useEffect(() => {
-    localStorage.setItem('units', JSON.stringify(units));
-  }, [units]);
+    if (!isLoading) {
+      const saveCategories = async () => {
+        try {
+          await db.saveCategories('part', partCategories);
+        } catch (error) {
+          console.error('Error saving part categories:', error);
+        }
+      };
+      saveCategories();
+    }
+  }, [partCategories, isLoading]);
 
+  // Save units
   useEffect(() => {
-    localStorage.setItem('consumables', JSON.stringify(consumables));
-  }, [consumables]);
+    if (!isLoading) {
+      const saveUnits = async () => {
+        try {
+          await db.saveUnits(units);
+        } catch (error) {
+          console.error('Error saving units:', error);
+        }
+      };
+      saveUnits();
+    }
+  }, [units, isLoading]);
 
+  // Save consumables
   useEffect(() => {
-    localStorage.setItem('rawMaterials', JSON.stringify(rawMaterials));
-  }, [rawMaterials]);
+    if (!isLoading && consumables.length > 0) {
+      const saveConsumables = async () => {
+        try {
+          await db.saveItems('consumables', consumables);
+        } catch (error) {
+          console.error('Error saving consumables:', error);
+          toast.error('Failed to save consumables');
+        }
+      };
+      saveConsumables();
+    }
+  }, [consumables, isLoading]);
 
+  // Save raw materials
   useEffect(() => {
-    localStorage.setItem('shifts', JSON.stringify(shifts));
-  }, [shifts]);
+    if (!isLoading && rawMaterials.length > 0) {
+      const saveRawMaterials = async () => {
+        try {
+          await db.saveItems('rawMaterials', rawMaterials);
+        } catch (error) {
+          console.error('Error saving raw materials:', error);
+          toast.error('Failed to save raw materials');
+        }
+      };
+      saveRawMaterials();
+    }
+  }, [rawMaterials, isLoading]);
 
+  // Save shifts
   useEffect(() => {
-    localStorage.setItem('calendars', JSON.stringify(calendars));
-  }, [calendars]);
+    if (!isLoading && shifts.length > 0) {
+      const saveShifts = async () => {
+        try {
+          await db.saveItems('shifts', shifts);
+        } catch (error) {
+          console.error('Error saving shifts:', error);
+          toast.error('Failed to save shifts');
+        }
+      };
+      saveShifts();
+    }
+  }, [shifts, isLoading]);
 
+  // Save calendars
   useEffect(() => {
-    localStorage.setItem('activeCalendarId', activeCalendarId);
-  }, [activeCalendarId]);
+    if (!isLoading && calendars.length > 0) {
+      const saveCalendars = async () => {
+        try {
+          await db.saveItems('calendars', calendars);
+        } catch (error) {
+          console.error('Error saving calendars:', error);
+          toast.error('Failed to save calendars');
+        }
+      };
+      saveCalendars();
+    }
+  }, [calendars, isLoading]);
+
+  // Save active calendar ID
+  useEffect(() => {
+    if (!isLoading) {
+      const saveActiveCalendarId = async () => {
+        try {
+          await db.saveSetting('activeCalendarId', activeCalendarId);
+        } catch (error) {
+          console.error('Error saving active calendar ID:', error);
+        }
+      };
+      saveActiveCalendarId();
+    }
+  }, [activeCalendarId, isLoading]);
 
   // When a new machine category is added, ensure it's also available for parts
   useEffect(() => {
-    // Sync categories between machines and parts (in case they need to match)
-    const combinedCategories = [...new Set([...machineCategories, ...partCategories])];
-    
-    if (JSON.stringify(combinedCategories) !== JSON.stringify(partCategories)) {
-      setPartCategories(combinedCategories);
+    if (!isLoading) {
+      // Sync categories between machines and parts (in case they need to match)
+      const combinedCategories = [...new Set([...machineCategories, ...partCategories])];
+      
+      if (JSON.stringify(combinedCategories) !== JSON.stringify(partCategories)) {
+        setPartCategories(combinedCategories);
+      }
     }
-  }, [machineCategories, partCategories]);
+  }, [machineCategories, partCategories, isLoading]);
 
   const value = {
     machines,
@@ -269,7 +338,8 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     calendars,
     setCalendars,
     activeCalendarId,
-    setActiveCalendarId
+    setActiveCalendarId,
+    isLoading
   };
 
   return (
