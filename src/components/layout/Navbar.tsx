@@ -1,8 +1,8 @@
+
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { 
-  Calendar, 
   Settings, 
   Box, 
   BarChart3, 
@@ -24,7 +24,6 @@ type NavItem = {
 
 const navItems: NavItem[] = [
   { name: 'Dashboard', icon: <Home size={20} />, path: '/' },
-  { name: 'Calendar', icon: <Calendar size={20} />, path: '/calendar' },
   { name: 'Machines', icon: <Settings size={20} />, path: '/machines' },
   { name: 'Parts', icon: <Box size={20} />, path: '/parts' },
   { name: 'OEE', icon: <BarChart3 size={20} />, path: '/oee' },

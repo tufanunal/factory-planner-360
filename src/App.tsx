@@ -9,7 +9,6 @@ import { DataProvider, useData } from "@/contexts/DataContext";
 import { LoadingScreen } from "@/components/ui/loading-spinner";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
-import Calendar from "./pages/Calendar";
 import Machines from "./pages/Machines";
 import Parts from "./pages/Parts";
 import OEE from "./pages/OEE";
@@ -31,7 +30,6 @@ const AppRoutes = () => {
   return (
     <Routes>
       <Route path="/" element={<Index />} />
-      <Route path="/calendar" element={<Calendar />} />
       <Route path="/machines" element={<Machines />} />
       <Route path="/parts" element={<Parts />} />
       <Route path="/oee" element={<OEE />} />

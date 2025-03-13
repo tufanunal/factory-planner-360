@@ -4,9 +4,7 @@ import {
   Machine, 
   Part, 
   Consumable, 
-  RawMaterial, 
-  Calendar, 
-  Shift,
+  RawMaterial,
   PartConsumable,
   PartRawMaterial
 } from '@/types/all';
@@ -25,16 +23,6 @@ export interface DatabaseService {
   saveItem<T>(storeName: string, item: T): Promise<T>;
   saveItems<T>(storeName: string, items: T[]): Promise<T[]>;
   deleteItem(storeName: string, id: string | number): Promise<void>;
-  
-  // Calendar specific operations
-  getCalendars(): Promise<Calendar[]>;
-  saveCalendar(calendar: Calendar): Promise<Calendar>;
-  deleteCalendar(id: string): Promise<void>;
-  
-  // Shift specific operations
-  getShifts(): Promise<Shift[]>;
-  saveShift(shift: Shift): Promise<Shift>;
-  deleteShift(id: number): Promise<void>;
   
   // Machine operations
   getMachines(): Promise<Machine[]>;
@@ -103,14 +91,6 @@ class IndexedDBService implements DatabaseService {
             db.createObjectStore('rawMaterials', { keyPath: 'id' });
           }
           
-          if (!db.objectStoreNames.contains('calendars')) {
-            db.createObjectStore('calendars', { keyPath: 'id' });
-          }
-          
-          if (!db.objectStoreNames.contains('shifts')) {
-            db.createObjectStore('shifts', { keyPath: 'id' });
-          }
-          
           if (!db.objectStoreNames.contains('partConsumables')) {
             db.createObjectStore('partConsumables', { keyPath: 'id' });
           }
@@ -170,32 +150,6 @@ class IndexedDBService implements DatabaseService {
   async deleteItem(storeName: string, id: string | number): Promise<void> {
     if (!this.db) await this.init();
     await this.db!.delete(storeName, id);
-  }
-  
-  // Calendar operations
-  async getCalendars(): Promise<Calendar[]> {
-    return this.getAllItems<Calendar>('calendars');
-  }
-  
-  async saveCalendar(calendar: Calendar): Promise<Calendar> {
-    return this.saveItem<Calendar>('calendars', calendar);
-  }
-  
-  async deleteCalendar(id: string): Promise<void> {
-    return this.deleteItem('calendars', id);
-  }
-  
-  // Shift operations
-  async getShifts(): Promise<Shift[]> {
-    return this.getAllItems<Shift>('shifts');
-  }
-  
-  async saveShift(shift: Shift): Promise<Shift> {
-    return this.saveItem<Shift>('shifts', shift);
-  }
-  
-  async deleteShift(id: number): Promise<void> {
-    return this.deleteItem('shifts', id);
   }
   
   // Machine operations
@@ -355,30 +309,6 @@ class IndexedDBService implements DatabaseService {
         console.log(`Migrated ${rawMaterials.length} raw materials`);
       }
       
-      // Migrate calendars - with date parsing
-      const storedCalendars = localStorage.getItem('calendars');
-      if (storedCalendars) {
-        const calendars = JSON.parse(storedCalendars);
-        // Convert date strings to Date objects
-        const parsedCalendars = calendars.map((calendar: any) => ({
-          ...calendar,
-          holidays: calendar.holidays.map((holiday: any) => ({
-            ...holiday,
-            date: new Date(holiday.date)
-          }))
-        }));
-        await this.saveItems('calendars', parsedCalendars);
-        console.log(`Migrated ${calendars.length} calendars`);
-      }
-      
-      // Migrate shifts
-      const storedShifts = localStorage.getItem('shifts');
-      if (storedShifts) {
-        const shifts = JSON.parse(storedShifts);
-        await this.saveItems('shifts', shifts);
-        console.log(`Migrated ${shifts.length} shifts`);
-      }
-      
       // Migrate machine categories
       const storedMachineCategories = localStorage.getItem('machineCategories');
       if (storedMachineCategories) {
@@ -395,12 +325,6 @@ class IndexedDBService implements DatabaseService {
       const storedUnits = localStorage.getItem('units');
       if (storedUnits) {
         await this.saveSetting('units', JSON.parse(storedUnits));
-      }
-      
-      // Migrate active calendar ID
-      const activeCalendarId = localStorage.getItem('activeCalendarId');
-      if (activeCalendarId) {
-        await this.saveSetting('activeCalendarId', activeCalendarId);
       }
       
       // Mark migration as completed

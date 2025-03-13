@@ -4,28 +4,9 @@ import { Machine } from '@/types/machine';
 import { Part } from '@/types/part';
 import { Consumable } from '@/types/consumable';
 import { RawMaterial } from '@/types/rawMaterial';
-import { Calendar, Shift, Holiday, WorkdaysPattern } from '@/types/calendar';
 import { DEFAULT_CATEGORY } from '@/components/machines/CategoryManager';
 import db from '@/services/db/DatabaseService';
 import { toast } from 'sonner';
-
-// Default workdays pattern (Mon-Fri)
-export const DEFAULT_WORKDAYS_PATTERN: WorkdaysPattern = {
-  monday: true,
-  tuesday: true,
-  wednesday: true,
-  thursday: true,
-  friday: true,
-  saturday: false,
-  sunday: false,
-};
-
-// Default shifts
-export const DEFAULT_SHIFTS: Shift[] = [
-  { id: 1, name: 'Morning Shift', startTime: '06:00', endTime: '14:00', team: 'Team A', color: 'bg-blue-100 text-blue-600' },
-  { id: 2, name: 'Afternoon Shift', startTime: '14:00', endTime: '22:00', team: 'Team B', color: 'bg-green-100 text-green-600' },
-  { id: 3, name: 'Night Shift', startTime: '22:00', endTime: '06:00', team: 'Team C', color: 'bg-purple-100 text-purple-600' },
-];
 
 interface DataContextType {
   // Machines data
@@ -54,14 +35,6 @@ interface DataContextType {
   rawMaterials: RawMaterial[];
   setRawMaterials: React.Dispatch<React.SetStateAction<RawMaterial[]>>;
   
-  // Calendar data
-  shifts: Shift[];
-  setShifts: React.Dispatch<React.SetStateAction<Shift[]>>;
-  calendars: Calendar[];
-  setCalendars: React.Dispatch<React.SetStateAction<Calendar[]>>;
-  activeCalendarId: string;
-  setActiveCalendarId: React.Dispatch<React.SetStateAction<string>>;
-  
   // Database status
   isLoading: boolean;
 }
@@ -69,20 +42,6 @@ interface DataContextType {
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
 const DEFAULT_UNITS = ['kg', 'pcs', 'liter', 'meter'];
-
-// Default calendar for the system
-const DEFAULT_CALENDAR: Calendar = {
-  id: 'default',
-  name: 'Default Calendar',
-  countryCode: 'INT',
-  isDefault: true,
-  holidays: [
-    { id: 1, name: 'New Year\'s Day', date: new Date(new Date().getFullYear(), 0, 1) },
-    { id: 2, name: 'Labor Day', date: new Date(new Date().getFullYear(), 4, 1) },
-    { id: 3, name: 'Christmas', date: new Date(new Date().getFullYear(), 11, 25) },
-  ],
-  workdaysPattern: DEFAULT_WORKDAYS_PATTERN,
-};
 
 export function DataProvider({ children }: { children: React.ReactNode }) {
   // Database loading state
@@ -96,9 +55,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const [units, setUnits] = useState<string[]>(DEFAULT_UNITS);
   const [consumables, setConsumables] = useState<Consumable[]>([]);
   const [rawMaterials, setRawMaterials] = useState<RawMaterial[]>([]);
-  const [shifts, setShifts] = useState<Shift[]>(DEFAULT_SHIFTS);
-  const [calendars, setCalendars] = useState<Calendar[]>([DEFAULT_CALENDAR]);
-  const [activeCalendarId, setActiveCalendarId] = useState<string>('default');
 
   // Initialize database and load data
   useEffect(() => {
@@ -136,18 +92,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         // Load raw materials
         const dbRawMaterials = await db.getRawMaterials();
         setRawMaterials(dbRawMaterials.length > 0 ? dbRawMaterials : []);
-        
-        // Load shifts
-        const dbShifts = await db.getShifts();
-        setShifts(dbShifts.length > 0 ? dbShifts : DEFAULT_SHIFTS);
-        
-        // Load calendars
-        const dbCalendars = await db.getCalendars();
-        setCalendars(dbCalendars.length > 0 ? dbCalendars : [DEFAULT_CALENDAR]);
-        
-        // Load active calendar ID
-        const dbActiveCalendarId = await db.getSetting('activeCalendarId');
-        setActiveCalendarId(dbActiveCalendarId || 'default');
         
         setIsLoading(false);
       } catch (error) {
@@ -262,50 +206,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     }
   }, [rawMaterials, isLoading]);
 
-  // Save shifts
-  useEffect(() => {
-    if (!isLoading && shifts.length > 0) {
-      const saveShifts = async () => {
-        try {
-          await db.saveItems('shifts', shifts);
-        } catch (error) {
-          console.error('Error saving shifts:', error);
-          toast.error('Failed to save shifts');
-        }
-      };
-      saveShifts();
-    }
-  }, [shifts, isLoading]);
-
-  // Save calendars
-  useEffect(() => {
-    if (!isLoading && calendars.length > 0) {
-      const saveCalendars = async () => {
-        try {
-          await db.saveItems('calendars', calendars);
-        } catch (error) {
-          console.error('Error saving calendars:', error);
-          toast.error('Failed to save calendars');
-        }
-      };
-      saveCalendars();
-    }
-  }, [calendars, isLoading]);
-
-  // Save active calendar ID
-  useEffect(() => {
-    if (!isLoading) {
-      const saveActiveCalendarId = async () => {
-        try {
-          await db.saveSetting('activeCalendarId', activeCalendarId);
-        } catch (error) {
-          console.error('Error saving active calendar ID:', error);
-        }
-      };
-      saveActiveCalendarId();
-    }
-  }, [activeCalendarId, isLoading]);
-
   // When a new machine category is added, ensure it's also available for parts
   useEffect(() => {
     if (!isLoading) {
@@ -333,12 +233,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     setConsumables,
     rawMaterials,
     setRawMaterials,
-    shifts,
-    setShifts,
-    calendars,
-    setCalendars,
-    activeCalendarId,
-    setActiveCalendarId,
     isLoading
   };
 

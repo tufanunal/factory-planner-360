@@ -1,6 +1,5 @@
 
 import { 
-  Calendar, 
   Settings, 
   Box, 
   BarChart3, 
@@ -28,13 +27,6 @@ const Index = () => {
     const rawMaterialsCount = rawMaterials.length;
     
     setModules([
-      {
-        title: 'Calendar',
-        description: 'Manage shift planning, holidays and working days',
-        icon: <Calendar size={24} />,
-        path: '/calendar',
-        metric: { value: '12', label: 'Shifts This Week' }
-      },
       {
         title: 'Machines',
         description: 'Track production planning and availability',
