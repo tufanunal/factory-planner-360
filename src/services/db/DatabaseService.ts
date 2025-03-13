@@ -252,7 +252,7 @@ class IndexedDBService implements DatabaseService {
   // Settings
   async getSetting(key: string): Promise<any> {
     try {
-      const setting = await this.getItem('settings', key);
+      const setting = await this.getItem<{key: string, value: any}>('settings', key);
       return setting ? setting.value : null;
     } catch (error) {
       console.error(`Error getting setting ${key}:`, error);
