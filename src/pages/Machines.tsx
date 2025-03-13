@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useData } from '@/contexts/DataContext';
 import DashboardLayout from '@/components/layout/DashboardLayout';
@@ -21,26 +20,19 @@ import CategoryManager from '@/components/machines/CategoryManager';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-// Helper function to generate unique ID
 const generateId = (): number => {
   return Date.now();
 };
 
-// Function to generate a random machine
 const generateRandomMachine = (existingIds: number[], category: string): Machine => {
-  // Generate a new unique ID
   let id = generateId();
   while (existingIds.includes(id)) {
     id = generateId();
   }
   
-  // Generate random availability (between 60% and 99%)
   const availability = Math.floor(Math.random() * 40) + 60;
-  
-  // Generate random setup time between 10 and 60 minutes
   const setupTime = `${Math.floor(Math.random() * 51) + 10} min`;
   
-  // Generate maintenance dates
   const today = new Date();
   const lastMaintenance = new Date(today);
   lastMaintenance.setDate(lastMaintenance.getDate() - Math.floor(Math.random() * 30));
@@ -48,7 +40,6 @@ const generateRandomMachine = (existingIds: number[], category: string): Machine
   const nextMaintenance = new Date(today);
   nextMaintenance.setDate(nextMaintenance.getDate() + Math.floor(Math.random() * 60) + 30);
   
-  // Random machine names
   const machineNames = [
     'CNC Router',
     'Laser Cutter',
@@ -67,20 +58,16 @@ const generateRandomMachine = (existingIds: number[], category: string): Machine
     'Sanding Machine'
   ];
   
-  // Random status with weighted probabilities
   const statusOptions: Array<'Operational' | 'Maintenance' | 'Offline'> = [
     'Operational', 'Operational', 'Operational', 'Operational', 'Operational', 
     'Operational', 'Operational', 'Maintenance', 'Maintenance', 'Offline'
   ];
   const randomStatus = statusOptions[Math.floor(Math.random() * statusOptions.length)];
   
-  // Generate random name
   const randomName = machineNames[Math.floor(Math.random() * machineNames.length)];
   
-  // Generate random hourly cost between 50 and 200
   const hourlyCost = Math.floor(Math.random() * 151) + 50;
   
-  // Generate random labor person/hour value between 1 and 4
   const labourPersonHour = Math.floor(Math.random() * 4) + 1;
   
   return {
@@ -106,7 +93,6 @@ const Machines = () => {
   const [isCategoryManagerOpen, setIsCategoryManagerOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   
-  // Calculate stats for machines
   const totalMachines = machines.length;
   const operationalMachines = machines.filter(m => m.status === 'Operational').length;
   const maintenanceMachines = machines.filter(m => m.status === 'Maintenance').length;
@@ -153,9 +139,7 @@ const Machines = () => {
     const existingIds = machines.map(m => m.id);
     const newMachines: Machine[] = [];
     
-    // Generate 5 random machines
     for (let i = 0; i < 5; i++) {
-      // Randomly select a category from available categories
       const randomCategory = machineCategories[Math.floor(Math.random() * machineCategories.length)];
       newMachines.push(generateRandomMachine(existingIds, randomCategory));
     }
@@ -164,7 +148,6 @@ const Machines = () => {
     toast.success('5 random machines generated');
   };
   
-  // Filter machines by selected category
   const filteredMachines = selectedCategory 
     ? machines.filter(machine => machine.category === selectedCategory)
     : machines;
@@ -174,7 +157,6 @@ const Machines = () => {
       title="Machines" 
       description="View and manage all your production machines"
     >
-      {/* Dashboard Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <Card className="animate-fade-in">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -277,7 +259,6 @@ const Machines = () => {
         </Card>
       </div>
       
-      {/* Category filters and management */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
         <div>
           <Tabs 
@@ -316,7 +297,6 @@ const Machines = () => {
         </div>
       </div>
       
-      {/* Machines Grid */}
       {filteredMachines.length === 0 ? (
         <Card className="animate-fade-in">
           <CardHeader>
@@ -348,20 +328,16 @@ const Machines = () => {
         </div>
       )}
       
-      {/* Modals */}
       <MachineEditModal
         machine={openMachine}
-        isOpen={isAddingMachine}
+        open={isAddingMachine}
         onClose={() => setIsAddingMachine(false)}
         onSave={handleSaveMachine}
       />
       
       <CategoryManager
-        isOpen={isCategoryManagerOpen}
-        onClose={() => setIsCategoryManagerOpen(false)}
-        categories={machineCategories}
-        setCategories={setMachineCategories}
-        itemType="machine"
+        onCategoryChange={setMachineCategories}
+        machines={machines}
       />
       
       <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>

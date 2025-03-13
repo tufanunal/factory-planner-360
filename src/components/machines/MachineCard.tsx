@@ -3,15 +3,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
-import { Settings, Clock, Pencil } from 'lucide-react';
+import { Settings, Clock, Pencil, Trash2 } from 'lucide-react';
 import { Machine } from '@/types/machine';
 
 interface MachineCardProps {
   machine: Machine;
   onEdit: (machine: Machine) => void;
+  onDelete: (machine: Machine) => void;
+  className?: string;
 }
 
-const MachineCard = ({ machine, onEdit }: MachineCardProps) => {
+const MachineCard = ({ machine, onEdit, onDelete, className }: MachineCardProps) => {
   // Function to get status badge styling
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -27,7 +29,7 @@ const MachineCard = ({ machine, onEdit }: MachineCardProps) => {
   };
 
   return (
-    <Card>
+    <Card className={className}>
       <CardHeader className="pb-2">
         <div className="flex justify-between items-start">
           <CardTitle className="text-lg">{machine.name}</CardTitle>
@@ -42,6 +44,14 @@ const MachineCard = ({ machine, onEdit }: MachineCardProps) => {
               onClick={() => onEdit(machine)}
             >
               <Pencil className="h-4 w-4" />
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-8 w-8 text-destructive" 
+              onClick={() => onDelete(machine)}
+            >
+              <Trash2 className="h-4 w-4" />
             </Button>
           </div>
         </div>
