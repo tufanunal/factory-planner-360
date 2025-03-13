@@ -6,7 +6,9 @@ import {
   Consumable, 
   RawMaterial, 
   Calendar, 
-  Shift 
+  Shift,
+  PartConsumable,
+  PartRawMaterial
 } from '@/types/all';
 import { toast } from 'sonner';
 
@@ -54,6 +56,15 @@ export interface DatabaseService {
   saveRawMaterial(material: RawMaterial): Promise<RawMaterial>;
   deleteRawMaterial(id: string): Promise<void>;
   
+  // Part relationship operations
+  getPartConsumables(): Promise<PartConsumable[]>;
+  savePartConsumable(item: PartConsumable): Promise<PartConsumable>;
+  deletePartConsumable(id: string): Promise<void>;
+  
+  getPartRawMaterials(): Promise<PartRawMaterial[]>;
+  savePartRawMaterial(item: PartRawMaterial): Promise<PartRawMaterial>;
+  deletePartRawMaterial(id: string): Promise<void>;
+  
   // Categories, units and settings
   getCategories(type: 'machine' | 'part'): Promise<string[]>;
   saveCategories(type: 'machine' | 'part', categories: string[]): Promise<string[]>;
@@ -72,7 +83,9 @@ class IndexedDBService implements DatabaseService {
   async init(): Promise<void> {
     try {
       this.db = await openDB(DB_NAME, DB_VERSION, {
-        upgrade(db) {
+        upgrade(db, oldVersion, newVersion) {
+          console.log(`Upgrading database from version ${oldVersion} to ${newVersion}`);
+          
           // Create object stores if they don't exist
           if (!db.objectStoreNames.contains('machines')) {
             db.createObjectStore('machines', { keyPath: 'id' });
@@ -96,6 +109,14 @@ class IndexedDBService implements DatabaseService {
           
           if (!db.objectStoreNames.contains('shifts')) {
             db.createObjectStore('shifts', { keyPath: 'id' });
+          }
+          
+          if (!db.objectStoreNames.contains('partConsumables')) {
+            db.createObjectStore('partConsumables', { keyPath: 'id' });
+          }
+          
+          if (!db.objectStoreNames.contains('partRawMaterials')) {
+            db.createObjectStore('partRawMaterials', { keyPath: 'id' });
           }
           
           if (!db.objectStoreNames.contains('settings')) {
@@ -228,10 +249,35 @@ class IndexedDBService implements DatabaseService {
     return this.deleteItem('rawMaterials', id);
   }
   
+  // Part relationship operations
+  async getPartConsumables(): Promise<PartConsumable[]> {
+    return this.getAllItems<PartConsumable>('partConsumables');
+  }
+  
+  async savePartConsumable(item: PartConsumable): Promise<PartConsumable> {
+    return this.saveItem<PartConsumable>('partConsumables', item);
+  }
+  
+  async deletePartConsumable(id: string): Promise<void> {
+    return this.deleteItem('partConsumables', id);
+  }
+  
+  async getPartRawMaterials(): Promise<PartRawMaterial[]> {
+    return this.getAllItems<PartRawMaterial>('partRawMaterials');
+  }
+  
+  async savePartRawMaterial(item: PartRawMaterial): Promise<PartRawMaterial> {
+    return this.saveItem<PartRawMaterial>('partRawMaterials', item);
+  }
+  
+  async deletePartRawMaterial(id: string): Promise<void> {
+    return this.deleteItem('partRawMaterials', id);
+  }
+  
   // Categories and units
   async getCategories(type: 'machine' | 'part'): Promise<string[]> {
     const setting = await this.getSetting(`${type}Categories`);
-    return setting || [];
+    return setting ? setting.value : [];
   }
   
   async saveCategories(type: 'machine' | 'part', categories: string[]): Promise<string[]> {
@@ -241,7 +287,7 @@ class IndexedDBService implements DatabaseService {
   
   async getUnits(): Promise<string[]> {
     const units = await this.getSetting('units');
-    return units || [];
+    return units ? units.value : [];
   }
   
   async saveUnits(units: string[]): Promise<string[]> {
@@ -253,7 +299,7 @@ class IndexedDBService implements DatabaseService {
   async getSetting(key: string): Promise<any> {
     try {
       const setting = await this.getItem<{key: string, value: any}>('settings', key);
-      return setting ? setting.value : null;
+      return setting ? setting : null;
     } catch (error) {
       console.error(`Error getting setting ${key}:`, error);
       return null;

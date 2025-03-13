@@ -38,8 +38,8 @@ const ShiftEditModal: React.FC<ShiftEditModalProps> = ({ shift, isOpen, onClose,
   const [formData, setFormData] = useState<Shift>({
     id: 0,
     name: '',
-    startTime: '00:00',
-    endTime: '00:00',
+    startTime: '08:00',
+    endTime: '16:00',
     team: '',
     color: COLORS[0].bg + ' ' + COLORS[0].text,
   });
@@ -54,8 +54,8 @@ const ShiftEditModal: React.FC<ShiftEditModalProps> = ({ shift, isOpen, onClose,
       setFormData({
         id: Date.now(),
         name: '',
-        startTime: '00:00',
-        endTime: '00:00',
+        startTime: '08:00',
+        endTime: '16:00',
         team: '',
         color: COLORS[0].bg + ' ' + COLORS[0].text,
       });
@@ -76,6 +76,12 @@ const ShiftEditModal: React.FC<ShiftEditModalProps> = ({ shift, isOpen, onClose,
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate the form
+    if (!formData.name || !formData.startTime || !formData.endTime || !formData.team) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
     
     // Find shifted shifts based on the circular relationship
     const morningShift = shifts.find(s => s.name.toLowerCase().includes('morning'));
@@ -165,37 +171,41 @@ const ShiftEditModal: React.FC<ShiftEditModalProps> = ({ shift, isOpen, onClose,
                 className="col-span-3"
                 placeholder="Morning Shift"
                 required
-                readOnly={true} // Prevent name changes to maintain relationships
               />
             </div>
             
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="startTime">Start Time</Label>
-                <div className="relative">
-                  <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="startTime"
-                    type="time"
-                    value={formData.startTime}
-                    onChange={(e) => handleChange('startTime', e.target.value)}
-                    className="pl-10"
-                    required
-                  />
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label className="text-right">
+                Time
+              </Label>
+              <div className="col-span-3 grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="startTime" className="text-xs">Start Time</Label>
+                  <div className="relative">
+                    <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="startTime"
+                      type="time"
+                      value={formData.startTime}
+                      onChange={(e) => handleChange('startTime', e.target.value)}
+                      className="pl-10"
+                      required
+                    />
+                  </div>
                 </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="endTime">End Time</Label>
-                <div className="relative">
-                  <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="endTime"
-                    type="time"
-                    value={formData.endTime}
-                    onChange={(e) => handleChange('endTime', e.target.value)}
-                    className="pl-10"
-                    required
-                  />
+                <div className="space-y-2">
+                  <Label htmlFor="endTime" className="text-xs">End Time</Label>
+                  <div className="relative">
+                    <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="endTime"
+                      type="time"
+                      value={formData.endTime}
+                      onChange={(e) => handleChange('endTime', e.target.value)}
+                      className="pl-10"
+                      required
+                    />
+                  </div>
                 </div>
               </div>
             </div>

@@ -1,5 +1,8 @@
 
 export interface PartConsumable {
-  consumableId: number;
-  amount: number;
+  id: string;
+  partId: string;
+  consumableId: string;
+  quantity: number;
+  unit: string;
 }

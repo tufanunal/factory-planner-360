@@ -1,5 +1,8 @@
 
 export interface PartRawMaterial {
-  rawMaterialId: number;
-  amount: number;
+  id: string;
+  partId: string;
+  rawMaterialId: string;
+  quantity: number;
+  unit: string;
 }
