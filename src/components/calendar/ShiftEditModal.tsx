@@ -46,6 +46,7 @@ const ShiftEditModal: React.FC<ShiftEditModalProps> = ({ shift, isOpen, onClose,
   const [showCircularWarning, setShowCircularWarning] = useState(false);
 
   useEffect(() => {
+    // Reset form when modal opens/closes or shift changes
     if (shift) {
       setFormData({
         ...shift
@@ -60,6 +61,8 @@ const ShiftEditModal: React.FC<ShiftEditModalProps> = ({ shift, isOpen, onClose,
         color: COLORS[0].bg + ' ' + COLORS[0].text,
       });
     }
+    // Reset warning state
+    setShowCircularWarning(false);
   }, [shift, isOpen]);
 
   const handleChange = (field: keyof Shift, value: string) => {
@@ -68,7 +71,7 @@ const ShiftEditModal: React.FC<ShiftEditModalProps> = ({ shift, isOpen, onClose,
       [field]: value
     }));
     
-    // Check if the change affects circular relationship
+    // Show warning when time fields change
     if (field === 'startTime' || field === 'endTime') {
       setShowCircularWarning(true);
     }
@@ -83,7 +86,7 @@ const ShiftEditModal: React.FC<ShiftEditModalProps> = ({ shift, isOpen, onClose,
       return;
     }
     
-    // Find shifted shifts based on the circular relationship
+    // Find shifts based on the circular relationship
     const morningShift = shifts.find(s => s.name.toLowerCase().includes('morning'));
     const afternoonShift = shifts.find(s => s.name.toLowerCase().includes('afternoon'));
     const nightShift = shifts.find(s => s.name.toLowerCase().includes('night'));
@@ -100,13 +103,13 @@ const ShiftEditModal: React.FC<ShiftEditModalProps> = ({ shift, isOpen, onClose,
         if (afternoonShift) {
           updatedShifts.push({
             ...afternoonShift,
-            startTime: formData.endTime // B
+            startTime: formData.endTime
           });
         }
         if (nightShift) {
           updatedShifts.push({
             ...nightShift,
-            endTime: formData.startTime // A
+            endTime: formData.startTime
           });
         }
       } else if (formData.id === afternoonShift?.id) {
@@ -114,13 +117,13 @@ const ShiftEditModal: React.FC<ShiftEditModalProps> = ({ shift, isOpen, onClose,
         if (nightShift) {
           updatedShifts.push({
             ...nightShift,
-            startTime: formData.endTime // C
+            startTime: formData.endTime
           });
         }
         if (morningShift) {
           updatedShifts.push({
             ...morningShift,
-            endTime: formData.startTime // B
+            endTime: formData.startTime
           });
         }
       } else if (formData.id === nightShift?.id) {
@@ -128,13 +131,13 @@ const ShiftEditModal: React.FC<ShiftEditModalProps> = ({ shift, isOpen, onClose,
         if (morningShift) {
           updatedShifts.push({
             ...morningShift,
-            startTime: formData.endTime // A
+            startTime: formData.endTime
           });
         }
         if (afternoonShift) {
           updatedShifts.push({
             ...afternoonShift,
-            endTime: formData.startTime // C
+            endTime: formData.startTime
           });
         }
       }
@@ -211,8 +214,8 @@ const ShiftEditModal: React.FC<ShiftEditModalProps> = ({ shift, isOpen, onClose,
             </div>
             
             {showCircularWarning && (
-              <div className="col-span-4 p-3 bg-yellow-50 border border-yellow-100 rounded-md flex items-start">
-                <AlertCircle className="h-5 w-5 text-yellow-500 mr-2 flex-shrink-0 mt-0.5" />
+              <div className="col-span-4 p-3 bg-yellow-50 border border-yellow-100 rounded-md flex items-start gap-2">
+                <AlertCircle className="h-5 w-5 text-yellow-500 flex-shrink-0 mt-0.5" />
                 <div className="text-sm text-yellow-700">
                   <strong>Note:</strong> Changing shift times will automatically update connected shifts 
                   to maintain the circular relationship (Morning → Afternoon → Night → Morning).
@@ -236,6 +239,7 @@ const ShiftEditModal: React.FC<ShiftEditModalProps> = ({ shift, isOpen, onClose,
                 />
               </div>
             </div>
+            
             <div className="grid grid-cols-4 items-center gap-4">
               <Label className="text-right">
                 Color
@@ -253,6 +257,7 @@ const ShiftEditModal: React.FC<ShiftEditModalProps> = ({ shift, isOpen, onClose,
               </div>
             </div>
           </div>
+          
           <DialogFooter>
             <DialogClose asChild>
               <Button type="button" variant="outline">Cancel</Button>

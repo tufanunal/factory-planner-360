@@ -133,6 +133,7 @@ class IndexedDBService implements DatabaseService {
     } catch (error) {
       console.error('Failed to init database:', error);
       toast.error('Failed to initialize database');
+      throw error; // Re-throw to ensure DataContext knows about initialization failure
     }
   }
   
@@ -286,8 +287,8 @@ class IndexedDBService implements DatabaseService {
   }
   
   async getUnits(): Promise<string[]> {
-    const units = await this.getSetting('units');
-    return units ? units.value : [];
+    const setting = await this.getSetting('units');
+    return setting ? setting.value : [];
   }
   
   async saveUnits(units: string[]): Promise<string[]> {
@@ -298,8 +299,9 @@ class IndexedDBService implements DatabaseService {
   // Settings
   async getSetting(key: string): Promise<any> {
     try {
-      const setting = await this.getItem<{key: string, value: any}>('settings', key);
-      return setting ? setting : null;
+      if (!this.db) await this.init();
+      const setting: {key: string, value: any} | undefined = await this.db!.get('settings', key);
+      return setting;
     } catch (error) {
       console.error(`Error getting setting ${key}:`, error);
       return null;
@@ -307,17 +309,26 @@ class IndexedDBService implements DatabaseService {
   }
   
   async saveSetting(key: string, value: any): Promise<void> {
+    if (!this.db) await this.init();
     await this.saveItem('settings', { key, value });
   }
   
   // Migration from localStorage
   private async migrateFromLocalStorage(): Promise<void> {
     try {
+      // Check if migration has already been performed
+      const migrationCompleted = await this.getSetting('migrationCompleted');
+      if (migrationCompleted && migrationCompleted.value === true) {
+        console.log('Migration already completed, skipping');
+        return;
+      }
+      
       // Migrate machines
       const storedMachines = localStorage.getItem('machines');
       if (storedMachines) {
         const machines = JSON.parse(storedMachines);
         await this.saveItems('machines', machines);
+        console.log(`Migrated ${machines.length} machines`);
       }
       
       // Migrate parts
@@ -325,6 +336,7 @@ class IndexedDBService implements DatabaseService {
       if (storedParts) {
         const parts = JSON.parse(storedParts);
         await this.saveItems('parts', parts);
+        console.log(`Migrated ${parts.length} parts`);
       }
       
       // Migrate consumables
@@ -332,6 +344,7 @@ class IndexedDBService implements DatabaseService {
       if (storedConsumables) {
         const consumables = JSON.parse(storedConsumables);
         await this.saveItems('consumables', consumables);
+        console.log(`Migrated ${consumables.length} consumables`);
       }
       
       // Migrate raw materials
@@ -339,6 +352,7 @@ class IndexedDBService implements DatabaseService {
       if (storedRawMaterials) {
         const rawMaterials = JSON.parse(storedRawMaterials);
         await this.saveItems('rawMaterials', rawMaterials);
+        console.log(`Migrated ${rawMaterials.length} raw materials`);
       }
       
       // Migrate calendars - with date parsing
@@ -354,6 +368,7 @@ class IndexedDBService implements DatabaseService {
           }))
         }));
         await this.saveItems('calendars', parsedCalendars);
+        console.log(`Migrated ${calendars.length} calendars`);
       }
       
       // Migrate shifts
@@ -361,6 +376,7 @@ class IndexedDBService implements DatabaseService {
       if (storedShifts) {
         const shifts = JSON.parse(storedShifts);
         await this.saveItems('shifts', shifts);
+        console.log(`Migrated ${shifts.length} shifts`);
       }
       
       // Migrate machine categories
@@ -387,6 +403,9 @@ class IndexedDBService implements DatabaseService {
         await this.saveSetting('activeCalendarId', activeCalendarId);
       }
       
+      // Mark migration as completed
+      await this.saveSetting('migrationCompleted', true);
+      
       console.log('Data migration from localStorage completed');
     } catch (error) {
       console.error('Error during migration from localStorage:', error);
@@ -396,5 +415,5 @@ class IndexedDBService implements DatabaseService {
 }
 
 // Create and export a singleton instance
-export const db = new IndexedDBService();
+const db = new IndexedDBService();
 export default db;

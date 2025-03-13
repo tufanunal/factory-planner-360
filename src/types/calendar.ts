@@ -2,8 +2,8 @@
 export interface Shift {
   id: number;
   name: string;
-  startTime: string;
-  endTime: string;
+  startTime: string; // in 24-hour format "HH:MM"
+  endTime: string;   // in 24-hour format "HH:MM"
   team: string;
   color: string;
 }
@@ -25,7 +25,7 @@ export interface WorkdaysPattern {
   sunday: boolean;
 }
 
-// New type for shift scheduling
+// Shift scheduling type - tracks which shifts are active on which dates
 export interface ShiftSchedule {
   [key: string]: { // date in ISO format (YYYY-MM-DD)
     shifts: {
