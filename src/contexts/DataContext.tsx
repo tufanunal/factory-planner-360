@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { 
   Machine, 
@@ -24,25 +25,39 @@ interface DataContextType {
   partRawMaterials: PartRawMaterial[];
   calendarState: CalendarState | null;
   
+  // Units and categories
+  units: string[];
+  setUnits: (units: string[]) => void;
+  machineCategories: string[];
+  setMachineCategories: (categories: string[]) => void;
+  partCategories: string[];
+  setPartCategories: (categories: string[]) => void;
+  
+  // Direct state setters (for components that need to modify state)
+  setMachines: (machines: Machine[]) => void;
+  setParts: (parts: Part[]) => void;
+  setConsumables: (consumables: Consumable[]) => void;
+  setRawMaterials: (materials: RawMaterial[]) => void;
+  
   // Machines
   addMachine: (machine: Machine) => Promise<void>;
-  updateMachine: (id: string, machine: Machine) => Promise<void>;
-  removeMachine: (id: string) => Promise<void>;
+  updateMachine: (id: number, machine: Machine) => Promise<void>;
+  removeMachine: (id: number) => Promise<void>;
   
   // Parts
   addPart: (part: Part) => Promise<void>;
-  updatePart: (id: string, part: Part) => Promise<void>;
-  removePart: (id: string) => Promise<void>;
+  updatePart: (id: number, part: Part) => Promise<void>;
+  removePart: (id: number) => Promise<void>;
   
   // Consumables
   addConsumable: (consumable: Consumable) => Promise<void>;
-  updateConsumable: (id: string, consumable: Consumable) => Promise<void>;
-  removeConsumable: (id: string) => Promise<void>;
+  updateConsumable: (id: number, consumable: Consumable) => Promise<void>;
+  removeConsumable: (id: number) => Promise<void>;
   
   // Raw Materials
   addRawMaterial: (rawMaterial: RawMaterial) => Promise<void>;
-  updateRawMaterial: (id: string, rawMaterial: RawMaterial) => Promise<void>;
-  removeRawMaterial: (id: string) => Promise<void>;
+  updateRawMaterial: (id: number, rawMaterial: RawMaterial) => Promise<void>;
+  removeRawMaterial: (id: number) => Promise<void>;
   
   // Part Relationships
   addPartConsumable: (relationship: PartConsumable) => Promise<void>;
@@ -72,6 +87,20 @@ const DataContext = createContext<DataContextType>({
   partConsumables: [],
   partRawMaterials: [],
   calendarState: null,
+  
+  // Units and categories
+  units: [],
+  setUnits: () => {},
+  machineCategories: [],
+  setMachineCategories: () => {},
+  partCategories: [],
+  setPartCategories: () => {},
+  
+  // Direct state setters
+  setMachines: () => {},
+  setParts: () => {},
+  setConsumables: () => {},
+  setRawMaterials: () => {},
   
   addMachine: async () => {},
   updateMachine: async () => {},
@@ -118,6 +147,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [partRawMaterials, setPartRawMaterials] = useState<PartRawMaterial[]>([]);
   const [calendarState, setCalendarState] = useState<CalendarState | null>(null);
   
+  // Units and categories
+  const [units, setUnits] = useState<string[]>(["pcs", "kg", "l", "m"]);
+  const [machineCategories, setMachineCategories] = useState<string[]>(["Uncategorized", "CNC", "Assembly", "Packaging"]);
+  const [partCategories, setPartCategories] = useState<string[]>(["Uncategorized", "Electronic", "Mechanical", "Plastic"]);
+  
   // Initialize database and load data
   useEffect(() => {
     const initializeData = async () => {
@@ -126,12 +160,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await DatabaseService.initialize();
         
         // Load initial data
-        const loadedMachines = await DatabaseService.getAllMachines();
-        const loadedParts = await DatabaseService.getAllParts();
-        const loadedConsumables = await DatabaseService.getAllConsumables();
-        const loadedRawMaterials = await DatabaseService.getAllRawMaterials();
-        const loadedPartConsumables = await DatabaseService.getAllPartConsumables();
-        const loadedPartRawMaterials = await DatabaseService.getAllPartRawMaterials();
+        const loadedMachines = await DatabaseService.getMachines();
+        const loadedParts = await DatabaseService.getParts();
+        const loadedConsumables = await DatabaseService.getConsumables();
+        const loadedRawMaterials = await DatabaseService.getRawMaterials();
+        const loadedPartConsumables = await DatabaseService.getPartConsumables();
+        const loadedPartRawMaterials = await DatabaseService.getPartRawMaterials();
         const loadedCalendarState = await DatabaseService.getCalendarState();
         
         // Update state
@@ -192,16 +226,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Machine methods
   const addMachine = async (machine: Machine) => {
     try {
-      await DatabaseService.addMachine(machine);
+      await DatabaseService.saveMachine(machine);
       setMachines(prevMachines => [...prevMachines, machine]);
     } catch (error) {
       console.error('Error adding machine:', error);
     }
   };
 
-  const updateMachine = async (id: string, machine: Machine) => {
+  const updateMachine = async (id: number, machine: Machine) => {
     try {
-      await DatabaseService.updateMachine(id, machine);
+      await DatabaseService.saveMachine(machine);
       setMachines(prevMachines =>
         prevMachines.map(m => (m.id === id ? machine : m))
       );
@@ -210,9 +244,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const removeMachine = async (id: string) => {
+  const removeMachine = async (id: number) => {
     try {
-      await DatabaseService.removeMachine(id);
+      await DatabaseService.deleteMachine(id.toString());
       setMachines(prevMachines => prevMachines.filter(m => m.id !== id));
     } catch (error) {
       console.error('Error removing machine:', error);
@@ -222,16 +256,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Part methods
   const addPart = async (part: Part) => {
     try {
-      await DatabaseService.addPart(part);
+      await DatabaseService.savePart(part);
       setParts(prevParts => [...prevParts, part]);
     } catch (error) {
       console.error('Error adding part:', error);
     }
   };
 
-  const updatePart = async (id: string, part: Part) => {
+  const updatePart = async (id: number, part: Part) => {
     try {
-      await DatabaseService.updatePart(id, part);
+      await DatabaseService.savePart(part);
       setParts(prevParts =>
         prevParts.map(p => (p.id === id ? part : p))
       );
@@ -240,9 +274,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const removePart = async (id: string) => {
+  const removePart = async (id: number) => {
     try {
-      await DatabaseService.removePart(id);
+      await DatabaseService.deletePart(id.toString());
       setParts(prevParts => prevParts.filter(p => p.id !== id));
     } catch (error) {
       console.error('Error removing part:', error);
@@ -252,16 +286,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Consumable methods
   const addConsumable = async (consumable: Consumable) => {
     try {
-      await DatabaseService.addConsumable(consumable);
+      await DatabaseService.saveConsumable(consumable);
       setConsumables(prevConsumables => [...prevConsumables, consumable]);
     } catch (error) {
       console.error('Error adding consumable:', error);
     }
   };
 
-  const updateConsumable = async (id: string, consumable: Consumable) => {
+  const updateConsumable = async (id: number, consumable: Consumable) => {
     try {
-      await DatabaseService.updateConsumable(id, consumable);
+      await DatabaseService.saveConsumable(consumable);
       setConsumables(prevConsumables =>
         prevConsumables.map(c => (c.id === id ? consumable : c))
       );
@@ -270,9 +304,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const removeConsumable = async (id: string) => {
+  const removeConsumable = async (id: number) => {
     try {
-      await DatabaseService.removeConsumable(id);
+      await DatabaseService.deleteConsumable(id.toString());
       setConsumables(prevConsumables => prevConsumables.filter(c => c.id !== id));
     } catch (error) {
       console.error('Error removing consumable:', error);
@@ -282,16 +316,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Raw Material methods
   const addRawMaterial = async (rawMaterial: RawMaterial) => {
     try {
-      await DatabaseService.addRawMaterial(rawMaterial);
+      await DatabaseService.saveRawMaterial(rawMaterial);
       setRawMaterials(prevRawMaterials => [...prevRawMaterials, rawMaterial]);
     } catch (error) {
       console.error('Error adding raw material:', error);
     }
   };
 
-  const updateRawMaterial = async (id: string, rawMaterial: RawMaterial) => {
+  const updateRawMaterial = async (id: number, rawMaterial: RawMaterial) => {
     try {
-      await DatabaseService.updateRawMaterial(id, rawMaterial);
+      await DatabaseService.saveRawMaterial(rawMaterial);
       setRawMaterials(prevRawMaterials =>
         prevRawMaterials.map(rm => (rm.id === id ? rawMaterial : rm))
       );
@@ -300,9 +334,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const removeRawMaterial = async (id: string) => {
+  const removeRawMaterial = async (id: number) => {
     try {
-      await DatabaseService.removeRawMaterial(id);
+      await DatabaseService.deleteRawMaterial(id.toString());
       setRawMaterials(prevRawMaterials => prevRawMaterials.filter(rm => rm.id !== id));
     } catch (error) {
       console.error('Error removing raw material:', error);
@@ -312,7 +346,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Part Relationships methods
   const addPartConsumable = async (relationship: PartConsumable) => {
     try {
-      await DatabaseService.addPartConsumable(relationship);
+      await DatabaseService.savePartConsumable(relationship);
       setPartConsumables(prev => [...prev, relationship]);
     } catch (error) {
       console.error('Error adding part consumable:', error);
@@ -321,7 +355,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const removePartConsumable = async (partId: string, consumableId: string) => {
     try {
-      await DatabaseService.removePartConsumable(partId, consumableId);
+      await DatabaseService.deletePartConsumable(partId + '-' + consumableId);
       setPartConsumables(prev => prev.filter(
         pc => !(pc.partId === partId && pc.consumableId === consumableId)
       ));
@@ -332,13 +366,20 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const updatePartConsumable = async (partId: string, consumableId: string, amount: number) => {
     try {
-      await DatabaseService.updatePartConsumable(partId, consumableId, amount);
-      setPartConsumables(prev => prev.map(pc => {
-        if (pc.partId === partId && pc.consumableId === consumableId) {
-          return { ...pc, amount };
-        }
-        return pc;
-      }));
+      const existingRelationship = partConsumables.find(
+        pc => pc.partId === partId && pc.consumableId === consumableId
+      );
+      
+      if (existingRelationship) {
+        const updatedRelationship = { ...existingRelationship, amount };
+        await DatabaseService.savePartConsumable(updatedRelationship);
+        setPartConsumables(prev => prev.map(pc => {
+          if (pc.partId === partId && pc.consumableId === consumableId) {
+            return { ...pc, amount };
+          }
+          return pc;
+        }));
+      }
     } catch (error) {
       console.error('Error updating part consumable:', error);
     }
@@ -346,7 +387,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const addPartRawMaterial = async (relationship: PartRawMaterial) => {
     try {
-      await DatabaseService.addPartRawMaterial(relationship);
+      await DatabaseService.savePartRawMaterial(relationship);
       setPartRawMaterials(prev => [...prev, relationship]);
     } catch (error) {
       console.error('Error adding part raw material:', error);
@@ -355,7 +396,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const removePartRawMaterial = async (partId: string, rawMaterialId: string) => {
     try {
-      await DatabaseService.removePartRawMaterial(partId, rawMaterialId);
+      await DatabaseService.deletePartRawMaterial(partId + '-' + rawMaterialId);
       setPartRawMaterials(prev => prev.filter(
         pc => !(pc.partId === partId && pc.rawMaterialId === rawMaterialId)
       ));
@@ -366,13 +407,20 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const updatePartRawMaterial = async (partId: string, rawMaterialId: string, amount: number) => {
     try {
-      await DatabaseService.updatePartRawMaterial(partId, rawMaterialId, amount);
-      setPartRawMaterials(prev => prev.map(pc => {
-        if (pc.partId === partId && pc.rawMaterialId === rawMaterialId) {
-          return { ...pc, amount };
-        }
-        return pc;
-      }));
+      const existingRelationship = partRawMaterials.find(
+        pc => pc.partId === partId && pc.rawMaterialId === rawMaterialId
+      );
+      
+      if (existingRelationship) {
+        const updatedRelationship = { ...existingRelationship, amount };
+        await DatabaseService.savePartRawMaterial(updatedRelationship);
+        setPartRawMaterials(prev => prev.map(pc => {
+          if (pc.partId === partId && pc.rawMaterialId === rawMaterialId) {
+            return { ...pc, amount };
+          }
+          return pc;
+        }));
+      }
     } catch (error) {
       console.error('Error updating part raw material:', error);
     }
@@ -514,6 +562,20 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     partRawMaterials,
     calendarState,
     
+    // Units and categories
+    units,
+    setUnits,
+    machineCategories,
+    setMachineCategories,
+    partCategories,
+    setPartCategories,
+    
+    // Direct state setters
+    setMachines,
+    setParts,
+    setConsumables,
+    setRawMaterials,
+    
     addMachine,
     updateMachine,
     removeMachine,
@@ -560,3 +622,4 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 };
 
 export const useData = () => useContext(DataContext);
+

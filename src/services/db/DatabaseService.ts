@@ -1,3 +1,4 @@
+
 import { openDB, DBSchema, IDBPDatabase } from 'idb';
 import { 
   Machine, 
@@ -102,7 +103,7 @@ class DatabaseService {
       if (storedMachines) {
         const machines = JSON.parse(storedMachines);
         for (const machine of machines) {
-          await this.addMachine(machine);
+          await this.saveMachine(machine);
         }
       }
 
@@ -111,7 +112,7 @@ class DatabaseService {
       if (storedParts) {
         const parts = JSON.parse(storedParts);
         for (const part of parts) {
-          await this.addPart(part);
+          await this.savePart(part);
         }
       }
 
@@ -120,7 +121,7 @@ class DatabaseService {
       if (storedConsumables) {
         const consumables = JSON.parse(storedConsumables);
         for (const consumable of consumables) {
-          await this.addConsumable(consumable);
+          await this.saveConsumable(consumable);
         }
       }
 
@@ -129,7 +130,7 @@ class DatabaseService {
       if (storedRawMaterials) {
         const rawMaterials = JSON.parse(storedRawMaterials);
         for (const rawMaterial of rawMaterials) {
-          await this.addRawMaterial(rawMaterial);
+          await this.saveRawMaterial(rawMaterial);
         }
       }
 
@@ -147,6 +148,10 @@ class DatabaseService {
 
   async saveMachine(machine: Machine): Promise<Machine> {
     if (!this.db) await this.initialize();
+    // Convert number id to string if necessary
+    if (typeof machine.id === 'number') {
+      machine = { ...machine, id: machine.id.toString() };
+    }
     await this.db!.put('machines', machine);
     return machine;
   }
@@ -163,6 +168,10 @@ class DatabaseService {
 
   async savePart(part: Part): Promise<Part> {
     if (!this.db) await this.initialize();
+    // Convert number id to string if necessary
+    if (typeof part.id === 'number') {
+      part = { ...part, id: part.id.toString() };
+    }
     await this.db!.put('parts', part);
     return part;
   }
@@ -179,6 +188,10 @@ class DatabaseService {
 
   async saveConsumable(consumable: Consumable): Promise<Consumable> {
     if (!this.db) await this.initialize();
+    // Convert number id to string if necessary
+    if (typeof consumable.id === 'number') {
+      consumable = { ...consumable, id: consumable.id.toString() };
+    }
     await this.db!.put('consumables', consumable);
     return consumable;
   }
@@ -195,6 +208,10 @@ class DatabaseService {
 
   async saveRawMaterial(material: RawMaterial): Promise<RawMaterial> {
     if (!this.db) await this.initialize();
+    // Convert number id to string if necessary
+    if (typeof material.id === 'number') {
+      material = { ...material, id: material.id.toString() };
+    }
     await this.db!.put('rawMaterials', material);
     return material;
   }
