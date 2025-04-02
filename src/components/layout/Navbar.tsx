@@ -11,7 +11,8 @@ import {
   Calculator, 
   Home,
   SunMoon,
-  Layers
+  Layers,
+  Calendar
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/hooks/use-theme';
@@ -29,6 +30,7 @@ const navItems: NavItem[] = [
   { name: 'OEE', icon: <BarChart3 size={20} />, path: '/oee' },
   { name: 'Consumables', icon: <Package size={20} />, path: '/consumables' },
   { name: 'Raw Materials', icon: <Layers size={20} />, path: '/raw-materials' },
+  { name: 'Calendar', icon: <Calendar size={20} />, path: '/calendar' },
   { name: 'Forecast', icon: <TrendingUp size={20} />, path: '/forecast' },
   { name: 'Cost Analysis', icon: <Calculator size={20} />, path: '/cost-breakdown' },
 ];

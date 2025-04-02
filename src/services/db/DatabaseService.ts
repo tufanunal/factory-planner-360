@@ -1,343 +1,261 @@
-
-import { openDB, IDBPDatabase } from 'idb';
+import { openDB, DBSchema, IDBPDatabase } from 'idb';
 import { 
   Machine, 
   Part, 
   Consumable, 
-  RawMaterial,
-  PartConsumable,
-  PartRawMaterial
+  RawMaterial, 
+  PartConsumable, 
+  PartRawMaterial,
+  CalendarState
 } from '@/types/all';
-import { toast } from 'sonner';
 
-const DB_NAME = 'factory-management-db';
-const DB_VERSION = 1;
-
-export interface DatabaseService {
-  // DB initialization
-  init(): Promise<void>;
-  
-  // General operations
-  getItem<T>(storeName: string, id: string | number): Promise<T | undefined>;
-  getAllItems<T>(storeName: string): Promise<T[]>;
-  saveItem<T>(storeName: string, item: T): Promise<T>;
-  saveItems<T>(storeName: string, items: T[]): Promise<T[]>;
-  deleteItem(storeName: string, id: string | number): Promise<void>;
-  
-  // Machine operations
-  getMachines(): Promise<Machine[]>;
-  saveMachine(machine: Machine): Promise<Machine>;
-  deleteMachine(id: string): Promise<void>;
-  
-  // Part operations
-  getParts(): Promise<Part[]>;
-  savePart(part: Part): Promise<Part>;
-  deletePart(id: string): Promise<void>;
-  
-  // Consumable operations
-  getConsumables(): Promise<Consumable[]>;
-  saveConsumable(consumable: Consumable): Promise<Consumable>;
-  deleteConsumable(id: string): Promise<void>;
-  
-  // Raw material operations
-  getRawMaterials(): Promise<RawMaterial[]>;
-  saveRawMaterial(material: RawMaterial): Promise<RawMaterial>;
-  deleteRawMaterial(id: string): Promise<void>;
-  
-  // Part relationship operations
-  getPartConsumables(): Promise<PartConsumable[]>;
-  savePartConsumable(item: PartConsumable): Promise<PartConsumable>;
-  deletePartConsumable(id: string): Promise<void>;
-  
-  getPartRawMaterials(): Promise<PartRawMaterial[]>;
-  savePartRawMaterial(item: PartRawMaterial): Promise<PartRawMaterial>;
-  deletePartRawMaterial(id: string): Promise<void>;
-  
-  // Categories, units and settings
-  getCategories(type: 'machine' | 'part'): Promise<string[]>;
-  saveCategories(type: 'machine' | 'part', categories: string[]): Promise<string[]>;
-  
-  getUnits(): Promise<string[]>;
-  saveUnits(units: string[]): Promise<string[]>;
-  
-  getSetting(key: string): Promise<any>;
-  saveSetting(key: string, value: any): Promise<void>;
+interface FactoryDB extends DBSchema {
+  machines: {
+    key: string;
+    value: Machine;
+  };
+  parts: {
+    key: string;
+    value: Part;
+  };
+  consumables: {
+    key: string;
+    value: Consumable;
+  };
+  rawMaterials: {
+    key: string;
+    value: RawMaterial;
+  };
+  partConsumables: {
+    key: string;
+    value: PartConsumable;
+  };
+  partRawMaterials: {
+    key: string;
+    value: PartRawMaterial;
+  };
+  calendar: {
+    key: string;
+    value: CalendarState;
+  };
 }
 
-class IndexedDBService implements DatabaseService {
-  private db: IDBPDatabase | null = null;
+class DatabaseService {
+  private db: IDBPDatabase<FactoryDB> | null = null;
+  private initialized = false;
   
-  // Initialize database
-  async init(): Promise<void> {
+  async initialize(): Promise<void> {
+    if (this.initialized) return;
+
     try {
-      this.db = await openDB(DB_NAME, DB_VERSION, {
+      const db = await openDB<FactoryDB>('factory-planner', 1, {
         upgrade(db, oldVersion, newVersion) {
-          console.log(`Upgrading database from version ${oldVersion} to ${newVersion}`);
-          
-          // Create object stores if they don't exist
-          if (!db.objectStoreNames.contains('machines')) {
-            db.createObjectStore('machines', { keyPath: 'id' });
+          if (oldVersion < 1) {
+            // Create object stores if they don't exist
+            if (!db.objectStoreNames.contains('machines')) {
+              db.createObjectStore('machines', { keyPath: 'id' });
+            }
+            if (!db.objectStoreNames.contains('parts')) {
+              db.createObjectStore('parts', { keyPath: 'id' });
+            }
+            if (!db.objectStoreNames.contains('consumables')) {
+              db.createObjectStore('consumables', { keyPath: 'id' });
+            }
+            if (!db.objectStoreNames.contains('rawMaterials')) {
+              db.createObjectStore('rawMaterials', { keyPath: 'id' });
+            }
+            if (!db.objectStoreNames.contains('partConsumables')) {
+              db.createObjectStore('partConsumables', { keyPath: 'id' });
+            }
+            if (!db.objectStoreNames.contains('partRawMaterials')) {
+              db.createObjectStore('partRawMaterials', { keyPath: 'id' });
+            }
+            if (!db.objectStoreNames.contains('calendar')) {
+              db.createObjectStore('calendar', { keyPath: 'viewDate' });
+            }
           }
-          
-          if (!db.objectStoreNames.contains('parts')) {
-            db.createObjectStore('parts', { keyPath: 'id' });
-          }
-          
-          if (!db.objectStoreNames.contains('consumables')) {
-            db.createObjectStore('consumables', { keyPath: 'id' });
-          }
-          
-          if (!db.objectStoreNames.contains('rawMaterials')) {
-            db.createObjectStore('rawMaterials', { keyPath: 'id' });
-          }
-          
-          if (!db.objectStoreNames.contains('partConsumables')) {
-            db.createObjectStore('partConsumables', { keyPath: 'id' });
-          }
-          
-          if (!db.objectStoreNames.contains('partRawMaterials')) {
-            db.createObjectStore('partRawMaterials', { keyPath: 'id' });
-          }
-          
-          if (!db.objectStoreNames.contains('settings')) {
-            db.createObjectStore('settings', { keyPath: 'key' });
-          }
-        }
+        },
       });
       
-      console.log('Database initialized successfully');
-      
-      // Migrate existing data from localStorage
+      this.db = db;
+      this.initialized = true;
+      console.info('Database initialized successfully');
+
+      // Try to migrate data from localStorage, if exists
       await this.migrateFromLocalStorage();
-      
     } catch (error) {
-      console.error('Failed to init database:', error);
-      toast.error('Failed to initialize database');
-      throw error; // Re-throw to ensure DataContext knows about initialization failure
+      console.error('Failed to initialize database:', error);
+      throw error;
     }
   }
-  
-  // General operations
-  async getItem<T>(storeName: string, id: string | number): Promise<T | undefined> {
-    if (!this.db) await this.init();
-    return this.db!.get(storeName, id);
-  }
-  
-  async getAllItems<T>(storeName: string): Promise<T[]> {
-    if (!this.db) await this.init();
-    return this.db!.getAll(storeName);
-  }
-  
-  async saveItem<T>(storeName: string, item: T): Promise<T> {
-    if (!this.db) await this.init();
-    await this.db!.put(storeName, item);
-    return item;
-  }
-  
-  async saveItems<T>(storeName: string, items: T[]): Promise<T[]> {
-    if (!this.db) await this.init();
-    const tx = this.db!.transaction(storeName, 'readwrite');
-    const store = tx.objectStore(storeName);
-    
-    for (const item of items) {
-      await store.put(item);
-    }
-    
-    await tx.done;
-    return items;
-  }
-  
-  async deleteItem(storeName: string, id: string | number): Promise<void> {
-    if (!this.db) await this.init();
-    await this.db!.delete(storeName, id);
-  }
-  
-  // Machine operations
-  async getMachines(): Promise<Machine[]> {
-    return this.getAllItems<Machine>('machines');
-  }
-  
-  async saveMachine(machine: Machine): Promise<Machine> {
-    return this.saveItem<Machine>('machines', machine);
-  }
-  
-  async deleteMachine(id: string): Promise<void> {
-    return this.deleteItem('machines', id);
-  }
-  
-  // Part operations
-  async getParts(): Promise<Part[]> {
-    return this.getAllItems<Part>('parts');
-  }
-  
-  async savePart(part: Part): Promise<Part> {
-    return this.saveItem<Part>('parts', part);
-  }
-  
-  async deletePart(id: string): Promise<void> {
-    return this.deleteItem('parts', id);
-  }
-  
-  // Consumable operations
-  async getConsumables(): Promise<Consumable[]> {
-    return this.getAllItems<Consumable>('consumables');
-  }
-  
-  async saveConsumable(consumable: Consumable): Promise<Consumable> {
-    return this.saveItem<Consumable>('consumables', consumable);
-  }
-  
-  async deleteConsumable(id: string): Promise<void> {
-    return this.deleteItem('consumables', id);
-  }
-  
-  // Raw material operations
-  async getRawMaterials(): Promise<RawMaterial[]> {
-    return this.getAllItems<RawMaterial>('rawMaterials');
-  }
-  
-  async saveRawMaterial(material: RawMaterial): Promise<RawMaterial> {
-    return this.saveItem<RawMaterial>('rawMaterials', material);
-  }
-  
-  async deleteRawMaterial(id: string): Promise<void> {
-    return this.deleteItem('rawMaterials', id);
-  }
-  
-  // Part relationship operations
-  async getPartConsumables(): Promise<PartConsumable[]> {
-    return this.getAllItems<PartConsumable>('partConsumables');
-  }
-  
-  async savePartConsumable(item: PartConsumable): Promise<PartConsumable> {
-    return this.saveItem<PartConsumable>('partConsumables', item);
-  }
-  
-  async deletePartConsumable(id: string): Promise<void> {
-    return this.deleteItem('partConsumables', id);
-  }
-  
-  async getPartRawMaterials(): Promise<PartRawMaterial[]> {
-    return this.getAllItems<PartRawMaterial>('partRawMaterials');
-  }
-  
-  async savePartRawMaterial(item: PartRawMaterial): Promise<PartRawMaterial> {
-    return this.saveItem<PartRawMaterial>('partRawMaterials', item);
-  }
-  
-  async deletePartRawMaterial(id: string): Promise<void> {
-    return this.deleteItem('partRawMaterials', id);
-  }
-  
-  // Categories and units
-  async getCategories(type: 'machine' | 'part'): Promise<string[]> {
-    const setting = await this.getSetting(`${type}Categories`);
-    return setting ? setting.value : [];
-  }
-  
-  async saveCategories(type: 'machine' | 'part', categories: string[]): Promise<string[]> {
-    await this.saveSetting(`${type}Categories`, categories);
-    return categories;
-  }
-  
-  async getUnits(): Promise<string[]> {
-    const setting = await this.getSetting('units');
-    return setting ? setting.value : [];
-  }
-  
-  async saveUnits(units: string[]): Promise<string[]> {
-    await this.saveSetting('units', units);
-    return units;
-  }
-  
-  // Settings
-  async getSetting(key: string): Promise<any> {
-    try {
-      if (!this.db) await this.init();
-      const setting: {key: string, value: any} | undefined = await this.db!.get('settings', key);
-      return setting;
-    } catch (error) {
-      console.error(`Error getting setting ${key}:`, error);
-      return null;
-    }
-  }
-  
-  async saveSetting(key: string, value: any): Promise<void> {
-    if (!this.db) await this.init();
-    await this.saveItem('settings', { key, value });
-  }
-  
-  // Migration from localStorage
+
   private async migrateFromLocalStorage(): Promise<void> {
     try {
-      // Check if migration has already been performed
-      const migrationCompleted = await this.getSetting('migrationCompleted');
-      if (migrationCompleted && migrationCompleted.value === true) {
-        console.log('Migration already completed, skipping');
+      const migrationCompleted = localStorage.getItem('migration-completed');
+      if (migrationCompleted === 'true') {
+        console.info('Migration already completed, skipping');
         return;
       }
-      
+
       // Migrate machines
       const storedMachines = localStorage.getItem('machines');
       if (storedMachines) {
         const machines = JSON.parse(storedMachines);
-        await this.saveItems('machines', machines);
-        console.log(`Migrated ${machines.length} machines`);
+        for (const machine of machines) {
+          await this.addMachine(machine);
+        }
       }
-      
+
       // Migrate parts
       const storedParts = localStorage.getItem('parts');
       if (storedParts) {
         const parts = JSON.parse(storedParts);
-        await this.saveItems('parts', parts);
-        console.log(`Migrated ${parts.length} parts`);
+        for (const part of parts) {
+          await this.addPart(part);
+        }
       }
-      
+
       // Migrate consumables
       const storedConsumables = localStorage.getItem('consumables');
       if (storedConsumables) {
         const consumables = JSON.parse(storedConsumables);
-        await this.saveItems('consumables', consumables);
-        console.log(`Migrated ${consumables.length} consumables`);
+        for (const consumable of consumables) {
+          await this.addConsumable(consumable);
+        }
       }
-      
+
       // Migrate raw materials
       const storedRawMaterials = localStorage.getItem('rawMaterials');
       if (storedRawMaterials) {
         const rawMaterials = JSON.parse(storedRawMaterials);
-        await this.saveItems('rawMaterials', rawMaterials);
-        console.log(`Migrated ${rawMaterials.length} raw materials`);
+        for (const rawMaterial of rawMaterials) {
+          await this.addRawMaterial(rawMaterial);
+        }
       }
-      
-      // Migrate machine categories
-      const storedMachineCategories = localStorage.getItem('machineCategories');
-      if (storedMachineCategories) {
-        await this.saveSetting('machineCategories', JSON.parse(storedMachineCategories));
-      }
-      
-      // Migrate part categories
-      const storedPartCategories = localStorage.getItem('partCategories');
-      if (storedPartCategories) {
-        await this.saveSetting('partCategories', JSON.parse(storedPartCategories));
-      }
-      
-      // Migrate units
-      const storedUnits = localStorage.getItem('units');
-      if (storedUnits) {
-        await this.saveSetting('units', JSON.parse(storedUnits));
-      }
-      
-      // Mark migration as completed
-      await this.saveSetting('migrationCompleted', true);
-      
-      console.log('Data migration from localStorage completed');
+
+      localStorage.setItem('migration-completed', 'true');
+      console.info('Migration from localStorage completed successfully');
     } catch (error) {
-      console.error('Error during migration from localStorage:', error);
-      toast.error('Error migrating data from localStorage');
+      console.error('Failed to migrate from localStorage:', error);
+    }
+  }
+
+  async getMachines(): Promise<Machine[]> {
+    if (!this.db) await this.initialize();
+    return this.db!.getAll('machines');
+  }
+
+  async saveMachine(machine: Machine): Promise<Machine> {
+    if (!this.db) await this.initialize();
+    await this.db!.put('machines', machine);
+    return machine;
+  }
+
+  async deleteMachine(id: string): Promise<void> {
+    if (!this.db) await this.initialize();
+    await this.db!.delete('machines', id);
+  }
+
+  async getParts(): Promise<Part[]> {
+    if (!this.db) await this.initialize();
+    return this.db!.getAll('parts');
+  }
+
+  async savePart(part: Part): Promise<Part> {
+    if (!this.db) await this.initialize();
+    await this.db!.put('parts', part);
+    return part;
+  }
+
+  async deletePart(id: string): Promise<void> {
+    if (!this.db) await this.initialize();
+    await this.db!.delete('parts', id);
+  }
+
+  async getConsumables(): Promise<Consumable[]> {
+    if (!this.db) await this.initialize();
+    return this.db!.getAll('consumables');
+  }
+
+  async saveConsumable(consumable: Consumable): Promise<Consumable> {
+    if (!this.db) await this.initialize();
+    await this.db!.put('consumables', consumable);
+    return consumable;
+  }
+
+  async deleteConsumable(id: string): Promise<void> {
+    if (!this.db) await this.initialize();
+    await this.db!.delete('consumables', id);
+  }
+
+  async getRawMaterials(): Promise<RawMaterial[]> {
+    if (!this.db) await this.initialize();
+    return this.db!.getAll('rawMaterials');
+  }
+
+  async saveRawMaterial(material: RawMaterial): Promise<RawMaterial> {
+    if (!this.db) await this.initialize();
+    await this.db!.put('rawMaterials', material);
+    return material;
+  }
+
+  async deleteRawMaterial(id: string): Promise<void> {
+    if (!this.db) await this.initialize();
+    await this.db!.delete('rawMaterials', id);
+  }
+
+  async getPartConsumables(): Promise<PartConsumable[]> {
+    if (!this.db) await this.initialize();
+    return this.db!.getAll('partConsumables');
+  }
+
+  async savePartConsumable(item: PartConsumable): Promise<PartConsumable> {
+    if (!this.db) await this.initialize();
+    await this.db!.put('partConsumables', item);
+    return item;
+  }
+
+  async deletePartConsumable(id: string): Promise<void> {
+    if (!this.db) await this.initialize();
+    await this.db!.delete('partConsumables', id);
+  }
+
+  async getPartRawMaterials(): Promise<PartRawMaterial[]> {
+    if (!this.db) await this.initialize();
+    return this.db!.getAll('partRawMaterials');
+  }
+
+  async savePartRawMaterial(item: PartRawMaterial): Promise<PartRawMaterial> {
+    if (!this.db) await this.initialize();
+    await this.db!.put('partRawMaterials', item);
+    return item;
+  }
+
+  async deletePartRawMaterial(id: string): Promise<void> {
+    if (!this.db) await this.initialize();
+    await this.db!.delete('partRawMaterials', id);
+  }
+
+  async getCalendarState(): Promise<CalendarState | null> {
+    if (!this.db) await this.initialize();
+    try {
+      return await this.db!.get('calendar', 'calendar-state');
+    } catch (error) {
+      console.error('Error getting calendar state:', error);
+      return null;
+    }
+  }
+
+  async setCalendarState(calendarState: CalendarState): Promise<void> {
+    if (!this.db) await this.initialize();
+    try {
+      // Always use the same key for the calendar state
+      const stateToStore = { ...calendarState, viewDate: 'calendar-state' };
+      await this.db!.put('calendar', stateToStore);
+    } catch (error) {
+      console.error('Error setting calendar state:', error);
     }
   }
 }
 
-// Create and export a singleton instance
-const db = new IndexedDBService();
-export default db;
+export default new DatabaseService();

@@ -6,7 +6,8 @@ import {
   Package, 
   TrendingUp, 
   Calculator,
-  Layers
+  Layers,
+  Calendar
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
@@ -14,7 +15,7 @@ import ModuleCard from '@/components/ui/ModuleCard';
 import { useData } from '@/contexts/DataContext';
 
 const Index = () => {
-  const { parts, machines, consumables, rawMaterials } = useData();
+  const { parts, machines, consumables, rawMaterials, calendarState } = useData();
   const [modules, setModules] = useState<any[]>([]);
 
   // Calculate metrics from actual data
@@ -25,6 +26,7 @@ const Index = () => {
       : 0;
     const consumablesCount = consumables.length;
     const rawMaterialsCount = rawMaterials.length;
+    const shiftTimeCount = calendarState?.shiftTimes?.length || 0;
     
     setModules([
       {
@@ -63,6 +65,13 @@ const Index = () => {
         metric: { value: rawMaterialsCount, label: 'Materials' }
       },
       {
+        title: 'Calendar',
+        description: 'Manage shifts, holidays, and production schedules',
+        icon: <Calendar size={24} />,
+        path: '/calendar',
+        metric: { value: shiftTimeCount, label: 'Shift Types' }
+      },
+      {
         title: 'Forecast',
         description: 'Analyze demand patterns and production needs',
         icon: <TrendingUp size={24} />,
@@ -77,7 +86,7 @@ const Index = () => {
         metric: { value: '€125K', label: 'Monthly Cost' }
       }
     ]);
-  }, [parts, machines, consumables, rawMaterials]);
+  }, [parts, machines, consumables, rawMaterials, calendarState]);
 
   return (
     <DashboardLayout 

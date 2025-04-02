@@ -16,6 +16,7 @@ import Consumables from "./pages/Consumables";
 import Forecast from "./pages/Forecast";
 import CostBreakdown from "./pages/CostBreakdown";
 import RawMaterials from "./pages/RawMaterials";
+import Calendar from "./pages/Calendar";
 
 const queryClient = new QueryClient();
 
@@ -35,6 +36,7 @@ const AppRoutes = () => {
       <Route path="/oee" element={<OEE />} />
       <Route path="/consumables" element={<Consumables />} />
       <Route path="/raw-materials" element={<RawMaterials />} />
+      <Route path="/calendar" element={<Calendar />} />
       <Route path="/forecast" element={<Forecast />} />
       <Route path="/cost-breakdown" element={<CostBreakdown />} />
       <Route path="*" element={<NotFound />} />
