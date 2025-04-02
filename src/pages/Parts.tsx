@@ -49,10 +49,10 @@ const PartsPage = () => {
   };
 
   const handleSavePart = (part: Part) => {
-    if (part.id === 0) {
+    if (part.id === '') {
       const newPart = {
         ...part,
-        id: Math.max(0, ...parts.map(p => p.id)) + 1
+        id: Math.random().toString(36).substring(2, 15)
       };
       setParts([...parts, newPart]);
     } else {
@@ -61,7 +61,7 @@ const PartsPage = () => {
     handleCloseModal();
   };
 
-  const handleDeletePart = (partId: number) => {
+  const handleDeletePart = (partId: string) => {
     setParts(parts.filter(p => p.id !== partId));
     toast.success("Part removed successfully");
   };

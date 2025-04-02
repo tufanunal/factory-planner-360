@@ -30,7 +30,7 @@ const MachineEditModal = ({
   const categories = propCategories || machineCategories || [DEFAULT_CATEGORY];
 
   const [formData, setFormData] = useState<Machine>({
-    id: 0,
+    id: '',
     name: '',
     status: 'Operational',
     availability: 0,
@@ -52,7 +52,7 @@ const MachineEditModal = ({
       });
     } else {
       setFormData({
-        id: 0,
+        id: '',
         name: '',
         status: 'Operational',
         availability: 0,

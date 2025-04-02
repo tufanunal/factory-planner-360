@@ -33,10 +33,10 @@ const RawMaterialsPage = () => {
   };
 
   const handleSaveRawMaterial = (rawMaterial: RawMaterial) => {
-    if (rawMaterial.id === 0) {
+    if (rawMaterial.id === '') {
       const newRawMaterial = {
         ...rawMaterial,
-        id: Math.max(0, ...rawMaterials.map(m => m.id)) + 1
+        id: Math.random().toString(36).substring(2, 15)
       };
       setRawMaterials([...rawMaterials, newRawMaterial]);
     } else {
@@ -45,7 +45,7 @@ const RawMaterialsPage = () => {
     handleCloseModal();
   };
 
-  const handleDeleteRawMaterial = (rawMaterialId: number) => {
+  const handleDeleteRawMaterial = (rawMaterialId: string) => {
     setRawMaterials(rawMaterials.filter(m => m.id !== rawMaterialId));
     toast.success("Raw material removed successfully");
   };

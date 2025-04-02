@@ -24,7 +24,7 @@ const RawMaterialEditModal = ({
   units
 }: RawMaterialEditModalProps) => {
   const [formData, setFormData] = useState<RawMaterial>({
-    id: 0,
+    id: '',
     name: '',
     unit: units[0] || 'pcs',
     stock: 0,
@@ -39,7 +39,7 @@ const RawMaterialEditModal = ({
     } else {
       // Reset form for new raw material
       setFormData({
-        id: 0,
+        id: '',
         name: '',
         unit: units[0] || 'pcs',
         stock: 0,

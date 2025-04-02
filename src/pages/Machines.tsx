@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useData } from '@/contexts/DataContext';
 import DashboardLayout from '@/components/layout/DashboardLayout';
@@ -20,11 +21,11 @@ import CategoryManager from '@/components/machines/CategoryManager';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-const generateId = (): number => {
-  return Date.now();
+const generateId = (): string => {
+  return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 };
 
-const generateRandomMachine = (existingIds: number[], category: string): Machine => {
+const generateRandomMachine = (existingIds: string[], category: string): Machine => {
   let id = generateId();
   while (existingIds.includes(id)) {
     id = generateId();

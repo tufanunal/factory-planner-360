@@ -36,7 +36,7 @@ const PartEditModal = ({
   const { consumables, rawMaterials } = useData();
   const [editedPart, setEditedPart] = useState<Part>(
     part || {
-      id: 0,
+      id: '',
       name: '',
       sku: '',
       description: '',
@@ -59,7 +59,7 @@ const PartEditModal = ({
       setEditedPart(part);
     } else {
       setEditedPart({
-        id: 0,
+        id: '',
         name: '',
         sku: '',
         description: '',
@@ -91,14 +91,13 @@ const PartEditModal = ({
 
   const handleAddConsumable = () => {
     const amount = Number(consumableAmount);
-    const conId = Number(consumableId);
     
     if (!consumableId || isNaN(amount) || amount <= 0) {
       toast.error("Please select a consumable and specify a valid amount");
       return;
     }
 
-    if (editedPart.consumables.some(c => c.consumableId === conId)) {
+    if (editedPart.consumables.some(c => c.consumableId === consumableId)) {
       toast.error("This consumable is already added to the part");
       return;
     }
@@ -107,7 +106,7 @@ const PartEditModal = ({
       ...prev,
       consumables: [
         ...prev.consumables,
-        { consumableId: conId, amount }
+        { consumableId, amount }
       ]
     }));
 
@@ -117,14 +116,13 @@ const PartEditModal = ({
 
   const handleAddRawMaterial = () => {
     const amount = Number(rawMaterialAmount);
-    const matId = Number(rawMaterialId);
     
     if (!rawMaterialId || isNaN(amount) || amount <= 0) {
       toast.error("Please select a raw material and specify a valid amount");
       return;
     }
 
-    if (editedPart.rawMaterials.some(r => r.rawMaterialId === matId)) {
+    if (editedPart.rawMaterials.some(r => r.rawMaterialId === rawMaterialId)) {
       toast.error("This raw material is already added to the part");
       return;
     }
@@ -133,7 +131,7 @@ const PartEditModal = ({
       ...prev,
       rawMaterials: [
         ...prev.rawMaterials,
-        { rawMaterialId: matId, amount }
+        { rawMaterialId, amount }
       ]
     }));
 
@@ -141,14 +139,14 @@ const PartEditModal = ({
     setRawMaterialAmount(0);
   };
 
-  const handleRemoveConsumable = (consumableId: number) => {
+  const handleRemoveConsumable = (consumableId: string) => {
     setEditedPart(prev => ({
       ...prev,
       consumables: prev.consumables.filter(c => c.consumableId !== consumableId)
     }));
   };
 
-  const handleRemoveRawMaterial = (rawMaterialId: number) => {
+  const handleRemoveRawMaterial = (rawMaterialId: string) => {
     setEditedPart(prev => ({
       ...prev,
       rawMaterials: prev.rawMaterials.filter(r => r.rawMaterialId !== rawMaterialId)
@@ -300,7 +298,7 @@ const PartEditModal = ({
                     placeholder="Select Consumable"
                   >
                     {consumables.map(consumable => (
-                      <SelectItem key={consumable.id} value={consumable.id.toString()}>
+                      <SelectItem key={consumable.id} value={consumable.id}>
                         {consumable.name}
                       </SelectItem>
                     ))}
@@ -362,7 +360,7 @@ const PartEditModal = ({
                     placeholder="Select Raw Material"
                   >
                     {rawMaterials.map(rawMaterial => (
-                      <SelectItem key={rawMaterial.id} value={rawMaterial.id.toString()}>
+                      <SelectItem key={rawMaterial.id} value={rawMaterial.id}>
                         {rawMaterial.name}
                       </SelectItem>
                     ))}

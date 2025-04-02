@@ -5,4 +5,5 @@ export interface PartRawMaterial {
   rawMaterialId: string;
   quantity: number;
   unit: string;
+  amount: number; // Adding this property since it's used in DataContext
 }
