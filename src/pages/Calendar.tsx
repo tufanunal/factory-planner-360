@@ -6,13 +6,36 @@ import OverviewCalendar from '@/components/calendar/OverviewCalendar';
 import WeeklyShiftView from '@/components/calendar/WeeklyShiftView';
 import HolidayManager from '@/components/calendar/HolidayManager';
 import ShiftTimeManager from '@/components/calendar/ShiftTimeManager';
-import { format } from 'date-fns';
+import { format, isValid } from 'date-fns';
 import { useData } from '@/contexts/DataContext';
 
 const Calendar = () => {
   const [activeTab, setActiveTab] = useState("shifts");
   const { calendarState, setViewDate } = useData();
-  const viewDate = calendarState ? new Date(calendarState.viewDate) : new Date();
+  
+  // Ensure we have a valid Date object or create a new one
+  const viewDate = (() => {
+    if (!calendarState) return new Date();
+    try {
+      const parsedDate = new Date(calendarState.viewDate);
+      return isValid(parsedDate) ? parsedDate : new Date();
+    } catch (error) {
+      console.error('Error parsing date:', error);
+      return new Date();
+    }
+  })();
+
+  const handleDateChange = (date: Date) => {
+    try {
+      if (isValid(date)) {
+        setViewDate(format(date, 'yyyy-MM-dd'));
+      } else {
+        console.error('Invalid date in handleDateChange:', date);
+      }
+    } catch (error) {
+      console.error('Error in handleDateChange:', error);
+    }
+  };
 
   return (
     <DashboardLayout 
@@ -26,7 +49,7 @@ const Calendar = () => {
             <h2 className="text-lg font-medium mb-4">Calendar Overview</h2>
             <OverviewCalendar 
               viewDate={viewDate}
-              onChangeDate={date => setViewDate(format(date, 'yyyy-MM-dd'))}
+              onChangeDate={handleDateChange}
               holidays={calendarState?.holidays || []}
               dayShiftToggles={calendarState?.dayShiftToggles || []}
             />
