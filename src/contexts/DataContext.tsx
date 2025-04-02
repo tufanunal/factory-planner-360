@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { 
   Machine, 
@@ -13,7 +12,7 @@ import {
   CalendarState
 } from '@/types/all';
 import { LoadingScreen } from '@/components/ui/loading-spinner';
-import DatabaseService from '@/services/db/DatabaseService';
+import SqlDatabaseService from '@/services/db/SqlDatabaseService';
 
 interface DataContextType {
   isLoading: boolean;
@@ -41,23 +40,23 @@ interface DataContextType {
   
   // Machines
   addMachine: (machine: Machine) => Promise<void>;
-  updateMachine: (id: number, machine: Machine) => Promise<void>;
-  removeMachine: (id: number) => Promise<void>;
+  updateMachine: (id: string, machine: Machine) => Promise<void>;
+  removeMachine: (id: string) => Promise<void>;
   
   // Parts
   addPart: (part: Part) => Promise<void>;
-  updatePart: (id: number, part: Part) => Promise<void>;
-  removePart: (id: number) => Promise<void>;
+  updatePart: (id: string, part: Part) => Promise<void>;
+  removePart: (id: string) => Promise<void>;
   
   // Consumables
   addConsumable: (consumable: Consumable) => Promise<void>;
-  updateConsumable: (id: number, consumable: Consumable) => Promise<void>;
-  removeConsumable: (id: number) => Promise<void>;
+  updateConsumable: (id: string, consumable: Consumable) => Promise<void>;
+  removeConsumable: (id: string) => Promise<void>;
   
   // Raw Materials
   addRawMaterial: (rawMaterial: RawMaterial) => Promise<void>;
-  updateRawMaterial: (id: number, rawMaterial: RawMaterial) => Promise<void>;
-  removeRawMaterial: (id: number) => Promise<void>;
+  updateRawMaterial: (id: string, rawMaterial: RawMaterial) => Promise<void>;
+  removeRawMaterial: (id: string) => Promise<void>;
   
   // Part Relationships
   addPartConsumable: (relationship: PartConsumable) => Promise<void>;
@@ -157,24 +156,20 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const initializeData = async () => {
       try {
         // Initialize the database
-        await DatabaseService.initialize();
+        await SqlDatabaseService.initialize();
         
         // Load initial data
-        const loadedMachines = await DatabaseService.getMachines();
-        const loadedParts = await DatabaseService.getParts();
-        const loadedConsumables = await DatabaseService.getConsumables();
-        const loadedRawMaterials = await DatabaseService.getRawMaterials();
-        const loadedPartConsumables = await DatabaseService.getPartConsumables();
-        const loadedPartRawMaterials = await DatabaseService.getPartRawMaterials();
-        const loadedCalendarState = await DatabaseService.getCalendarState();
+        const loadedMachines = await SqlDatabaseService.getMachines();
+        const loadedParts = await SqlDatabaseService.getParts();
+        const loadedConsumables = await SqlDatabaseService.getConsumables();
+        const loadedRawMaterials = await SqlDatabaseService.getRawMaterials();
+        const loadedCalendarState = await SqlDatabaseService.getCalendarState();
         
         // Update state
         setMachines(loadedMachines || []);
         setParts(loadedParts || []);
         setConsumables(loadedConsumables || []);
         setRawMaterials(loadedRawMaterials || []);
-        setPartConsumables(loadedPartConsumables || []);
-        setPartRawMaterials(loadedPartRawMaterials || []);
         
         // Initialize calendar state if not exists
         if (!loadedCalendarState) {
@@ -207,7 +202,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             viewDate: new Date().toISOString().split('T')[0]
           };
           
-          await DatabaseService.setCalendarState(initialCalendarState);
+          await SqlDatabaseService.setCalendarState(initialCalendarState);
           setCalendarState(initialCalendarState);
         } else {
           setCalendarState(loadedCalendarState);
@@ -226,16 +221,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Machine methods
   const addMachine = async (machine: Machine) => {
     try {
-      await DatabaseService.saveMachine(machine);
+      await SqlDatabaseService.saveMachine(machine);
       setMachines(prevMachines => [...prevMachines, machine]);
     } catch (error) {
       console.error('Error adding machine:', error);
     }
   };
 
-  const updateMachine = async (id: number, machine: Machine) => {
+  const updateMachine = async (id: string, machine: Machine) => {
     try {
-      await DatabaseService.saveMachine(machine);
+      await SqlDatabaseService.saveMachine(machine);
       setMachines(prevMachines =>
         prevMachines.map(m => (m.id === id ? machine : m))
       );
@@ -244,9 +239,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const removeMachine = async (id: number) => {
+  const removeMachine = async (id: string) => {
     try {
-      await DatabaseService.deleteMachine(id.toString());
+      await SqlDatabaseService.deleteMachine(id);
       setMachines(prevMachines => prevMachines.filter(m => m.id !== id));
     } catch (error) {
       console.error('Error removing machine:', error);
@@ -256,16 +251,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Part methods
   const addPart = async (part: Part) => {
     try {
-      await DatabaseService.savePart(part);
+      await SqlDatabaseService.savePart(part);
       setParts(prevParts => [...prevParts, part]);
     } catch (error) {
       console.error('Error adding part:', error);
     }
   };
 
-  const updatePart = async (id: number, part: Part) => {
+  const updatePart = async (id: string, part: Part) => {
     try {
-      await DatabaseService.savePart(part);
+      await SqlDatabaseService.savePart(part);
       setParts(prevParts =>
         prevParts.map(p => (p.id === id ? part : p))
       );
@@ -274,9 +269,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const removePart = async (id: number) => {
+  const removePart = async (id: string) => {
     try {
-      await DatabaseService.deletePart(id.toString());
+      await SqlDatabaseService.deletePart(id);
       setParts(prevParts => prevParts.filter(p => p.id !== id));
     } catch (error) {
       console.error('Error removing part:', error);
@@ -286,16 +281,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Consumable methods
   const addConsumable = async (consumable: Consumable) => {
     try {
-      await DatabaseService.saveConsumable(consumable);
+      await SqlDatabaseService.saveConsumable(consumable);
       setConsumables(prevConsumables => [...prevConsumables, consumable]);
     } catch (error) {
       console.error('Error adding consumable:', error);
     }
   };
 
-  const updateConsumable = async (id: number, consumable: Consumable) => {
+  const updateConsumable = async (id: string, consumable: Consumable) => {
     try {
-      await DatabaseService.saveConsumable(consumable);
+      await SqlDatabaseService.saveConsumable(consumable);
       setConsumables(prevConsumables =>
         prevConsumables.map(c => (c.id === id ? consumable : c))
       );
@@ -304,9 +299,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const removeConsumable = async (id: number) => {
+  const removeConsumable = async (id: string) => {
     try {
-      await DatabaseService.deleteConsumable(id.toString());
+      await SqlDatabaseService.deleteConsumable(id);
       setConsumables(prevConsumables => prevConsumables.filter(c => c.id !== id));
     } catch (error) {
       console.error('Error removing consumable:', error);
@@ -316,16 +311,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Raw Material methods
   const addRawMaterial = async (rawMaterial: RawMaterial) => {
     try {
-      await DatabaseService.saveRawMaterial(rawMaterial);
+      await SqlDatabaseService.saveRawMaterial(rawMaterial);
       setRawMaterials(prevRawMaterials => [...prevRawMaterials, rawMaterial]);
     } catch (error) {
       console.error('Error adding raw material:', error);
     }
   };
 
-  const updateRawMaterial = async (id: number, rawMaterial: RawMaterial) => {
+  const updateRawMaterial = async (id: string, rawMaterial: RawMaterial) => {
     try {
-      await DatabaseService.saveRawMaterial(rawMaterial);
+      await SqlDatabaseService.saveRawMaterial(rawMaterial);
       setRawMaterials(prevRawMaterials =>
         prevRawMaterials.map(rm => (rm.id === id ? rawMaterial : rm))
       );
@@ -334,9 +329,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const removeRawMaterial = async (id: number) => {
+  const removeRawMaterial = async (id: string) => {
     try {
-      await DatabaseService.deleteRawMaterial(id.toString());
+      await SqlDatabaseService.deleteRawMaterial(id);
       setRawMaterials(prevRawMaterials => prevRawMaterials.filter(rm => rm.id !== id));
     } catch (error) {
       console.error('Error removing raw material:', error);
@@ -346,8 +341,21 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Part Relationships methods
   const addPartConsumable = async (relationship: PartConsumable) => {
     try {
-      await DatabaseService.savePartConsumable(relationship);
-      setPartConsumables(prev => [...prev, relationship]);
+      const part = parts.find(p => p.id === relationship.partId);
+      if (part) {
+        const updatedPart = {
+          ...part,
+          consumables: [
+            ...part.consumables,
+            {
+              consumableId: relationship.consumableId,
+              amount: relationship.amount
+            }
+          ]
+        };
+        await SqlDatabaseService.savePart(updatedPart);
+        setParts(prev => prev.map(p => p.id === part.id ? updatedPart : p));
+      }
     } catch (error) {
       console.error('Error adding part consumable:', error);
     }
@@ -355,10 +363,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const removePartConsumable = async (partId: string, consumableId: string) => {
     try {
-      await DatabaseService.deletePartConsumable(partId + '-' + consumableId);
-      setPartConsumables(prev => prev.filter(
-        pc => !(pc.partId === partId && pc.consumableId === consumableId)
-      ));
+      const part = parts.find(p => p.id === partId);
+      if (part) {
+        const updatedPart = {
+          ...part,
+          consumables: part.consumables.filter(c => c.consumableId !== consumableId)
+        };
+        await SqlDatabaseService.savePart(updatedPart);
+        setParts(prev => prev.map(p => p.id === partId ? updatedPart : p));
+      }
     } catch (error) {
       console.error('Error removing part consumable:', error);
     }
@@ -366,19 +379,19 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const updatePartConsumable = async (partId: string, consumableId: string, amount: number) => {
     try {
-      const existingRelationship = partConsumables.find(
-        pc => pc.partId === partId && pc.consumableId === consumableId
-      );
-      
-      if (existingRelationship) {
-        const updatedRelationship = { ...existingRelationship, amount };
-        await DatabaseService.savePartConsumable(updatedRelationship);
-        setPartConsumables(prev => prev.map(pc => {
-          if (pc.partId === partId && pc.consumableId === consumableId) {
-            return { ...pc, amount };
-          }
-          return pc;
-        }));
+      const part = parts.find(p => p.id === partId);
+      if (part) {
+        const updatedPart = {
+          ...part,
+          consumables: part.consumables.map(c => {
+            if (c.consumableId === consumableId) {
+              return { ...c, amount };
+            }
+            return c;
+          })
+        };
+        await SqlDatabaseService.savePart(updatedPart);
+        setParts(prev => prev.map(p => p.id === partId ? updatedPart : p));
       }
     } catch (error) {
       console.error('Error updating part consumable:', error);
@@ -387,8 +400,21 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const addPartRawMaterial = async (relationship: PartRawMaterial) => {
     try {
-      await DatabaseService.savePartRawMaterial(relationship);
-      setPartRawMaterials(prev => [...prev, relationship]);
+      const part = parts.find(p => p.id === relationship.partId);
+      if (part) {
+        const updatedPart = {
+          ...part,
+          rawMaterials: [
+            ...part.rawMaterials,
+            {
+              rawMaterialId: relationship.rawMaterialId,
+              amount: relationship.amount
+            }
+          ]
+        };
+        await SqlDatabaseService.savePart(updatedPart);
+        setParts(prev => prev.map(p => p.id === part.id ? updatedPart : p));
+      }
     } catch (error) {
       console.error('Error adding part raw material:', error);
     }
@@ -396,10 +422,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const removePartRawMaterial = async (partId: string, rawMaterialId: string) => {
     try {
-      await DatabaseService.deletePartRawMaterial(partId + '-' + rawMaterialId);
-      setPartRawMaterials(prev => prev.filter(
-        pc => !(pc.partId === partId && pc.rawMaterialId === rawMaterialId)
-      ));
+      const part = parts.find(p => p.id === partId);
+      if (part) {
+        const updatedPart = {
+          ...part,
+          rawMaterials: part.rawMaterials.filter(r => r.rawMaterialId !== rawMaterialId)
+        };
+        await SqlDatabaseService.savePart(updatedPart);
+        setParts(prev => prev.map(p => p.id === partId ? updatedPart : p));
+      }
     } catch (error) {
       console.error('Error removing part raw material:', error);
     }
@@ -407,19 +438,19 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const updatePartRawMaterial = async (partId: string, rawMaterialId: string, amount: number) => {
     try {
-      const existingRelationship = partRawMaterials.find(
-        pc => pc.partId === partId && pc.rawMaterialId === rawMaterialId
-      );
-      
-      if (existingRelationship) {
-        const updatedRelationship = { ...existingRelationship, amount };
-        await DatabaseService.savePartRawMaterial(updatedRelationship);
-        setPartRawMaterials(prev => prev.map(pc => {
-          if (pc.partId === partId && pc.rawMaterialId === rawMaterialId) {
-            return { ...pc, amount };
-          }
-          return pc;
-        }));
+      const part = parts.find(p => p.id === partId);
+      if (part) {
+        const updatedPart = {
+          ...part,
+          rawMaterials: part.rawMaterials.map(r => {
+            if (r.rawMaterialId === rawMaterialId) {
+              return { ...r, amount };
+            }
+            return r;
+          })
+        };
+        await SqlDatabaseService.savePart(updatedPart);
+        setParts(prev => prev.map(p => p.id === partId ? updatedPart : p));
       }
     } catch (error) {
       console.error('Error updating part raw material:', error);
@@ -435,7 +466,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           holidays: [...calendarState.holidays, holiday]
         };
         
-        await DatabaseService.setCalendarState(updatedCalendarState);
+        await SqlDatabaseService.setCalendarState(updatedCalendarState);
         setCalendarState(updatedCalendarState);
       }
     } catch (error) {
@@ -451,7 +482,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           holidays: calendarState.holidays.filter(holiday => holiday.id !== id)
         };
         
-        await DatabaseService.setCalendarState(updatedCalendarState);
+        await SqlDatabaseService.setCalendarState(updatedCalendarState);
         setCalendarState(updatedCalendarState);
       }
     } catch (error) {
@@ -467,7 +498,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           shiftTimes: [...calendarState.shiftTimes, shiftTime]
         };
         
-        await DatabaseService.setCalendarState(updatedCalendarState);
+        await SqlDatabaseService.setCalendarState(updatedCalendarState);
         setCalendarState(updatedCalendarState);
       }
     } catch (error) {
@@ -484,7 +515,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           dayShiftToggles: calendarState.dayShiftToggles.filter(toggle => toggle.shiftTimeId !== id)
         };
         
-        await DatabaseService.setCalendarState(updatedCalendarState);
+        await SqlDatabaseService.setCalendarState(updatedCalendarState);
         setCalendarState(updatedCalendarState);
       }
     } catch (error) {
@@ -502,7 +533,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         let updatedToggles;
         
         if (existingToggle) {
-          // Toggle existing entry
           updatedToggles = calendarState.dayShiftToggles.map(toggle => {
             if (toggle.date === date && toggle.shiftTimeId === shiftTimeId) {
               return { ...toggle, isActive: !toggle.isActive };
@@ -510,7 +540,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             return toggle;
           });
         } else {
-          // Create new entry
           updatedToggles = [
             ...calendarState.dayShiftToggles,
             {
@@ -527,7 +556,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           dayShiftToggles: updatedToggles
         };
         
-        await DatabaseService.setCalendarState(updatedCalendarState);
+        await SqlDatabaseService.setCalendarState(updatedCalendarState);
         setCalendarState(updatedCalendarState);
       }
     } catch (error) {
@@ -543,7 +572,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           viewDate: date
         };
         
-        await DatabaseService.setCalendarState(updatedCalendarState);
+        await SqlDatabaseService.setCalendarState(updatedCalendarState);
         setCalendarState(updatedCalendarState);
       }
     } catch (error) {
@@ -622,4 +651,3 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 };
 
 export const useData = () => useContext(DataContext);
-

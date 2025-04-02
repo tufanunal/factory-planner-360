@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -24,7 +23,7 @@ const ConsumableEditModal = ({
   units
 }: ConsumableEditModalProps) => {
   const [formData, setFormData] = useState<Consumable>({
-    id: 0,
+    id: '',
     name: '',
     unit: units[0] || 'pcs',
     stock: 0,
@@ -39,7 +38,7 @@ const ConsumableEditModal = ({
     } else {
       // Reset form for new consumable
       setFormData({
-        id: 0,
+        id: '',
         name: '',
         unit: units[0] || 'pcs',
         stock: 0,

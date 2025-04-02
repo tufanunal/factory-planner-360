@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -33,10 +32,10 @@ const ConsumablesPage = () => {
   };
 
   const handleSaveConsumable = (consumable: Consumable) => {
-    if (consumable.id === 0) {
+    if (!consumable.id) {
       const newConsumable = {
         ...consumable,
-        id: Math.max(0, ...consumables.map(c => c.id)) + 1
+        id: Math.random().toString(36).substring(2, 15)
       };
       setConsumables([...consumables, newConsumable]);
     } else {
@@ -45,7 +44,7 @@ const ConsumablesPage = () => {
     handleCloseModal();
   };
 
-  const handleDeleteConsumable = (consumableId: number) => {
+  const handleDeleteConsumable = (consumableId: string) => {
     setConsumables(consumables.filter(c => c.id !== consumableId));
     toast.success("Consumable removed successfully");
   };
