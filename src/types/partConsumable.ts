@@ -5,5 +5,5 @@ export interface PartConsumable {
   consumableId: string;
   quantity: number;
   unit: string;
-  amount: number; // Adding this property since it's used in DataContext
+  amount: number;
 }
