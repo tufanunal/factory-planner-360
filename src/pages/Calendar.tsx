@@ -6,18 +6,37 @@ import OverviewCalendar from '@/components/calendar/OverviewCalendar';
 import WeeklyShiftView from '@/components/calendar/WeeklyShiftView';
 import HolidayManager from '@/components/calendar/HolidayManager';
 import ShiftTimeManager from '@/components/calendar/ShiftTimeManager';
-import { format, isValid } from 'date-fns';
+import { format, isValid, parseISO } from 'date-fns';
 import { useData } from '@/contexts/DataContext';
 
 const Calendar = () => {
   const [activeTab, setActiveTab] = useState("shifts");
   const { calendarState, setViewDate } = useData();
   
+  // Safe format function to handle potential date issues
+  const safeFormat = (date: Date | string | number, formatStr: string): string => {
+    try {
+      // If it's a string, try to parse it first
+      if (typeof date === 'string') {
+        const parsedDate = parseISO(date);
+        if (!isValid(parsedDate)) throw new Error('Invalid date string');
+        return format(parsedDate, formatStr);
+      }
+      
+      // If it's a Date object or timestamp
+      if (!isValid(date)) throw new Error('Invalid date');
+      return format(date, formatStr);
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return format(new Date(), formatStr); // Return current date as fallback
+    }
+  };
+  
   // Ensure we have a valid Date object or create a new one
   const viewDate = (() => {
     if (!calendarState) return new Date();
     try {
-      const parsedDate = new Date(calendarState.viewDate);
+      const parsedDate = parseISO(calendarState.viewDate);
       return isValid(parsedDate) ? parsedDate : new Date();
     } catch (error) {
       console.error('Error parsing date:', error);
@@ -28,7 +47,7 @@ const Calendar = () => {
   const handleDateChange = (date: Date) => {
     try {
       if (isValid(date)) {
-        setViewDate(format(date, 'yyyy-MM-dd'));
+        setViewDate(safeFormat(date, 'yyyy-MM-dd'));
       } else {
         console.error('Invalid date in handleDateChange:', date);
       }

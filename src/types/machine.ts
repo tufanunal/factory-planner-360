@@ -1,6 +1,6 @@
 
 export interface Machine {
-  id: number;
+  id: string;
   name: string;
   status: 'Operational' | 'Maintenance' | 'Offline';
   availability: number;

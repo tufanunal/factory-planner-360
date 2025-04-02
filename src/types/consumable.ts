@@ -1,6 +1,6 @@
 
 export interface Consumable {
-  id: number;
+  id: string;
   name: string;
   unit: string;
   stock: number;

@@ -1,6 +1,6 @@
 
 export interface Part {
-  id: number;
+  id: string;
   sku: string;
   name: string;
   category: string;
@@ -9,11 +9,11 @@ export interface Part {
   status: 'Active' | 'Low Stock' | 'Discontinued';
   description?: string;
   consumables: {
-    consumableId: number;
+    consumableId: string;
     amount: number;
   }[];
   rawMaterials: {
-    rawMaterialId: number;
+    rawMaterialId: string;
     amount: number;
   }[];
 }

@@ -7,7 +7,8 @@ import {
   RawMaterial, 
   PartConsumable, 
   PartRawMaterial,
-  CalendarState
+  CalendarState,
+  Unit
 } from '@/types/all';
 
 interface FactoryDB extends DBSchema {
@@ -38,6 +39,10 @@ interface FactoryDB extends DBSchema {
   calendar: {
     key: string;
     value: CalendarState;
+  };
+  units: {
+    key: string;
+    value: Unit;
   };
 }
 
@@ -74,6 +79,9 @@ class DatabaseService {
             if (!db.objectStoreNames.contains('calendar')) {
               db.createObjectStore('calendar', { keyPath: 'viewDate' });
             }
+            if (!db.objectStoreNames.contains('units')) {
+              db.createObjectStore('units', { keyPath: 'id' });
+            }
           }
         },
       });
@@ -103,6 +111,10 @@ class DatabaseService {
       if (storedMachines) {
         const machines = JSON.parse(storedMachines);
         for (const machine of machines) {
+          // Ensure id is a string before saving
+          if (typeof machine.id === 'number') {
+            machine.id = String(machine.id);
+          }
           await this.saveMachine(machine);
         }
       }
@@ -112,6 +124,10 @@ class DatabaseService {
       if (storedParts) {
         const parts = JSON.parse(storedParts);
         for (const part of parts) {
+          // Ensure id is a string before saving
+          if (typeof part.id === 'number') {
+            part.id = String(part.id);
+          }
           await this.savePart(part);
         }
       }
@@ -121,6 +137,10 @@ class DatabaseService {
       if (storedConsumables) {
         const consumables = JSON.parse(storedConsumables);
         for (const consumable of consumables) {
+          // Ensure id is a string before saving
+          if (typeof consumable.id === 'number') {
+            consumable.id = String(consumable.id);
+          }
           await this.saveConsumable(consumable);
         }
       }
@@ -130,6 +150,10 @@ class DatabaseService {
       if (storedRawMaterials) {
         const rawMaterials = JSON.parse(storedRawMaterials);
         for (const rawMaterial of rawMaterials) {
+          // Ensure id is a string before saving
+          if (typeof rawMaterial.id === 'number') {
+            rawMaterial.id = String(rawMaterial.id);
+          }
           await this.saveRawMaterial(rawMaterial);
         }
       }
@@ -141,6 +165,24 @@ class DatabaseService {
     }
   }
 
+  // Units methods
+  async getUnits(): Promise<Unit[]> {
+    if (!this.db) await this.initialize();
+    return this.db!.getAll('units');
+  }
+
+  async saveUnit(unit: Unit): Promise<Unit> {
+    if (!this.db) await this.initialize();
+    await this.db!.put('units', unit);
+    return unit;
+  }
+
+  async deleteUnit(id: string): Promise<void> {
+    if (!this.db) await this.initialize();
+    await this.db!.delete('units', id);
+  }
+
+  // Machine methods
   async getMachines(): Promise<Machine[]> {
     if (!this.db) await this.initialize();
     return this.db!.getAll('machines');
@@ -161,6 +203,7 @@ class DatabaseService {
     await this.db!.delete('machines', id);
   }
 
+  // Part methods
   async getParts(): Promise<Part[]> {
     if (!this.db) await this.initialize();
     return this.db!.getAll('parts');
@@ -181,6 +224,7 @@ class DatabaseService {
     await this.db!.delete('parts', id);
   }
 
+  // Consumable methods
   async getConsumables(): Promise<Consumable[]> {
     if (!this.db) await this.initialize();
     return this.db!.getAll('consumables');
@@ -201,6 +245,7 @@ class DatabaseService {
     await this.db!.delete('consumables', id);
   }
 
+  // Raw Material methods
   async getRawMaterials(): Promise<RawMaterial[]> {
     if (!this.db) await this.initialize();
     return this.db!.getAll('rawMaterials');
@@ -221,6 +266,7 @@ class DatabaseService {
     await this.db!.delete('rawMaterials', id);
   }
 
+  // Part Relationships methods
   async getPartConsumables(): Promise<PartConsumable[]> {
     if (!this.db) await this.initialize();
     return this.db!.getAll('partConsumables');
@@ -253,6 +299,7 @@ class DatabaseService {
     await this.db!.delete('partRawMaterials', id);
   }
 
+  // Calendar methods
   async getCalendarState(): Promise<CalendarState | null> {
     if (!this.db) await this.initialize();
     try {
