@@ -144,9 +144,24 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [partRawMaterials, setPartRawMaterials] = useState<PartRawMaterial[]>([]);
   const [calendarState, setCalendarState] = useState<CalendarState | null>(null);
   
-  const [units, setUnits] = useState<string[]>(["pcs", "kg", "l", "m"]);
-  const [machineCategories, setMachineCategories] = useState<string[]>(["Uncategorized", "CNC", "Assembly", "Packaging"]);
-  const [partCategories, setPartCategories] = useState<string[]>(["Uncategorized", "Electronic", "Mechanical", "Plastic"]);
+  const [units, setUnitsState] = useState<string[]>(["pcs", "kg", "l", "m"]);
+  const [machineCategories, setMachineCategoriesState] = useState<string[]>(["Uncategorized", "CNC", "Assembly", "Packaging"]);
+  const [partCategories, setPartCategoriesState] = useState<string[]>(["Uncategorized", "Electronic", "Mechanical", "Plastic"]);
+  
+  const setUnits = (newUnits: string[]) => {
+    setUnitsState(newUnits);
+    localStorage.setItem('factory-planner-units', JSON.stringify(newUnits));
+  };
+  
+  const setMachineCategories = (newCategories: string[]) => {
+    setMachineCategoriesState(newCategories);
+    localStorage.setItem('factory-planner-machine-categories', JSON.stringify(newCategories));
+  };
+  
+  const setPartCategories = (newCategories: string[]) => {
+    setPartCategoriesState(newCategories);
+    localStorage.setItem('factory-planner-part-categories', JSON.stringify(newCategories));
+  };
   
   useEffect(() => {
     const initializeData = async () => {
@@ -163,6 +178,26 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setParts(loadedParts || []);
         setConsumables(loadedConsumables || []);
         setRawMaterials(loadedRawMaterials || []);
+        
+        try {
+          const savedUnits = localStorage.getItem('factory-planner-units');
+          const savedMachineCategories = localStorage.getItem('factory-planner-machine-categories');
+          const savedPartCategories = localStorage.getItem('factory-planner-part-categories');
+          
+          if (savedUnits) {
+            setUnitsState(JSON.parse(savedUnits));
+          }
+          
+          if (savedMachineCategories) {
+            setMachineCategoriesState(JSON.parse(savedMachineCategories));
+          }
+          
+          if (savedPartCategories) {
+            setPartCategoriesState(JSON.parse(savedPartCategories));
+          }
+        } catch (storageError) {
+          console.error('Error loading categories from localStorage:', storageError);
+        }
         
         if (!loadedCalendarState) {
           const initialCalendarState: CalendarState = {
@@ -454,9 +489,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         await SqlDatabaseService.setCalendarState(updatedCalendarState);
         setCalendarState(updatedCalendarState);
+        console.log('Holiday added successfully:', holiday);
       }
     } catch (error) {
       console.error('Error adding holiday:', error);
+      throw error;
     }
   };
 
@@ -470,9 +507,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         await SqlDatabaseService.setCalendarState(updatedCalendarState);
         setCalendarState(updatedCalendarState);
+        console.log('Holiday removed successfully:', id);
       }
     } catch (error) {
       console.error('Error removing holiday:', error);
+      throw error;
     }
   };
 
@@ -486,9 +525,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         await SqlDatabaseService.setCalendarState(updatedCalendarState);
         setCalendarState(updatedCalendarState);
+        console.log('Shift time added successfully:', shiftTime);
       }
     } catch (error) {
       console.error('Error adding shift time:', error);
+      throw error;
     }
   };
 
@@ -525,9 +566,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         await SqlDatabaseService.setCalendarState(updatedCalendarState);
         setCalendarState(updatedCalendarState);
+        console.log('Shift time removed successfully:', id);
       }
     } catch (error) {
       console.error('Error removing shift time:', error);
+      throw error;
     }
   };
 
@@ -566,9 +609,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         await SqlDatabaseService.setCalendarState(updatedCalendarState);
         setCalendarState(updatedCalendarState);
+        console.log('Shift toggled successfully:', date, shiftTimeId);
       }
     } catch (error) {
       console.error('Error toggling shift:', error);
+      throw error;
     }
   };
 
@@ -582,9 +627,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         await SqlDatabaseService.setCalendarState(updatedCalendarState);
         setCalendarState(updatedCalendarState);
+        console.log('View date updated successfully:', date);
       }
     } catch (error) {
       console.error('Error setting view date:', error);
+      throw error;
     }
   };
 

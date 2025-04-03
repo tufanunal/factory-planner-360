@@ -62,7 +62,7 @@ const WeeklyShiftView = ({
   dayShiftToggles,
   holidays
 }: WeeklyShiftViewProps) => {
-  const { toggleShift, updateShiftTime } = useData();
+  const { toggleShift, updateShiftTime, setViewDate } = useData();
   const [currentDate, setCurrentDate] = useState(viewDate);
   const [weekStart, setWeekStart] = useState(() => startOfWeek(currentDate, { weekStartsOn: 1 }));
   const [editingShift, setEditingShift] = useState<ShiftTime | null>(null);
@@ -130,13 +130,15 @@ const WeeklyShiftView = ({
   const navigateToPrevWeek = () => {
     const newStart = subWeeks(weekStart, 1);
     setWeekStart(newStart);
-    setCurrentDate(newStart);
+    const newDate = format(newStart, 'yyyy-MM-dd');
+    setViewDate(newDate);
   };
 
   const navigateToNextWeek = () => {
     const newStart = addWeeks(weekStart, 1);
     setWeekStart(newStart);
-    setCurrentDate(newStart);
+    const newDate = format(newStart, 'yyyy-MM-dd');
+    setViewDate(newDate);
   };
 
   const handleEditShift = (shift: ShiftTime) => {
@@ -144,7 +146,7 @@ const WeeklyShiftView = ({
     setShiftName(shift.name);
     setStartTime(shift.startTime);
     setEndTime(shift.endTime);
-    setShiftColor(shift.color);
+    setShiftColor(shift.color || 'blue');
     setIsEditDialogOpen(true);
   };
 
@@ -226,7 +228,7 @@ const WeeklyShiftView = ({
         {/* Shift toggles for each day */}
         <div className="divide-y divide-border">
           {shiftTimes.map((shift) => {
-            const colorStyle = colorMap[shift.color] || defaultColor;
+            const colorStyle = shift.color ? colorMap[shift.color] || defaultColor : defaultColor;
             
             return (
               <div 
