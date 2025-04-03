@@ -12,13 +12,17 @@ import {
   isSameWeek,
   isWeekend
 } from 'date-fns';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Edit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Toggle } from '@/components/ui/toggle';
 import { cn } from '@/lib/utils';
 import { useData } from '@/contexts/DataContext';
 import { Holiday, ShiftTime, DayShiftToggle } from '@/types/calendar';
 import { toast } from "sonner";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 // Define color mapping
 const colorMap: Record<string, { bg: string, hover: string }> = {
@@ -40,6 +44,8 @@ const colorMap: Record<string, { bg: string, hover: string }> = {
   fuchsia: { bg: "bg-fuchsia-100 dark:bg-fuchsia-900/30", hover: "hover:bg-fuchsia-200 dark:hover:bg-fuchsia-900/50" }
 };
 
+const colorOptions = Object.keys(colorMap);
+
 // Default fallback color
 const defaultColor = { bg: "bg-gray-100 dark:bg-gray-900/30", hover: "hover:bg-gray-200 dark:hover:bg-gray-900/50" };
 
@@ -56,9 +62,15 @@ const WeeklyShiftView = ({
   dayShiftToggles,
   holidays
 }: WeeklyShiftViewProps) => {
-  const { toggleShift } = useData();
+  const { toggleShift, updateShiftTime } = useData();
   const [currentDate, setCurrentDate] = useState(viewDate);
   const [weekStart, setWeekStart] = useState(() => startOfWeek(currentDate, { weekStartsOn: 1 }));
+  const [editingShift, setEditingShift] = useState<ShiftTime | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [shiftName, setShiftName] = useState("");
+  const [startTime, setStartTime] = useState("");
+  const [endTime, setEndTime] = useState("");
+  const [shiftColor, setShiftColor] = useState("blue");
 
   // Change week when date changes
   useEffect(() => {
@@ -127,6 +139,36 @@ const WeeklyShiftView = ({
     setCurrentDate(newStart);
   };
 
+  const handleEditShift = (shift: ShiftTime) => {
+    setEditingShift(shift);
+    setShiftName(shift.name);
+    setStartTime(shift.startTime);
+    setEndTime(shift.endTime);
+    setShiftColor(shift.color);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleSaveShift = async () => {
+    if (!editingShift) return;
+    
+    try {
+      const updatedShift: ShiftTime = {
+        ...editingShift,
+        name: shiftName,
+        startTime: startTime,
+        endTime: endTime,
+        color: shiftColor
+      };
+      
+      await updateShiftTime(updatedShift);
+      setIsEditDialogOpen(false);
+      toast.success("Shift updated successfully");
+    } catch (error) {
+      console.error("Error updating shift:", error);
+      toast.error("Failed to update shift");
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -183,50 +225,157 @@ const WeeklyShiftView = ({
         
         {/* Shift toggles for each day */}
         <div className="divide-y divide-border">
-          {shiftTimes.map((shift) => (
-            <div 
-              key={shift.id}
-              className="grid grid-cols-7 divide-x divide-border"
-            >
-              {daysOfWeek.map((day) => {
-                const isActive = getShiftState(day, shift.id);
-                const holidayName = getHolidayName(day);
-                const isWeekendDay = isWeekend(day);
-                const colorStyle = colorMap[shift.color] || defaultColor;
-                
-                return (
-                  <div 
-                    key={`${day.toString()}-${shift.id}`}
-                    className={cn(
-                      "p-3 flex flex-col items-center",
-                      holidayName && "bg-red-100/50 dark:bg-red-900/20",
-                      isWeekendDay && !holidayName && "bg-gray-100/50 dark:bg-gray-800/20"
-                    )}
-                  >
-                    <div className="text-xs text-muted-foreground mb-1">
-                      {shift.startTime} - {shift.endTime}
-                    </div>
-                    <Toggle 
-                      pressed={isActive}
-                      onPressedChange={() => handleShiftToggle(day, shift.id)}
-                      size="sm"
-                      variant="outline"
+          {shiftTimes.map((shift) => {
+            const colorStyle = colorMap[shift.color] || defaultColor;
+            
+            return (
+              <div 
+                key={shift.id}
+                className="grid grid-cols-7 divide-x divide-border"
+              >
+                {daysOfWeek.map((day) => {
+                  const isActive = getShiftState(day, shift.id);
+                  const holidayName = getHolidayName(day);
+                  const isWeekendDay = isWeekend(day);
+                  
+                  return (
+                    <div 
+                      key={`${day.toString()}-${shift.id}`}
                       className={cn(
-                        "w-full justify-center",
-                        isActive && colorStyle.bg,
-                        isActive && colorStyle.hover
+                        "p-3 flex flex-col items-center",
+                        holidayName && "bg-red-100/50 dark:bg-red-900/20",
+                        isWeekendDay && !holidayName && "bg-gray-100/50 dark:bg-gray-800/20"
                       )}
-                      disabled={!!holidayName}
                     >
-                      {shift.name}
-                    </Toggle>
-                  </div>
-                );
-              })}
-            </div>
-          ))}
+                      <div className="text-xs text-muted-foreground mb-1 flex items-center justify-between w-full">
+                        <div>{shift.startTime} - {shift.endTime}</div>
+                        {day === daysOfWeek[0] && (
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-5 w-5 ml-1 -mr-1" 
+                            onClick={() => handleEditShift(shift)}
+                          >
+                            <Edit className="h-3 w-3" />
+                          </Button>
+                        )}
+                      </div>
+                      <Toggle 
+                        pressed={isActive}
+                        onPressedChange={() => handleShiftToggle(day, shift.id)}
+                        size="sm"
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-center",
+                          isActive && colorStyle.bg,
+                          isActive && colorStyle.hover
+                        )}
+                        disabled={!!holidayName}
+                      >
+                        {shift.name}
+                      </Toggle>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })}
         </div>
       </div>
+
+      {/* Edit Shift Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Shift</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="shiftName" className="text-right">
+                Name
+              </Label>
+              <Input
+                id="shiftName"
+                value={shiftName}
+                onChange={(e) => setShiftName(e.target.value)}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="startTime" className="text-right">
+                Start Time
+              </Label>
+              <Input
+                id="startTime"
+                type="time"
+                value={startTime}
+                onChange={(e) => setStartTime(e.target.value)}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="endTime" className="text-right">
+                End Time
+              </Label>
+              <Input
+                id="endTime"
+                type="time"
+                value={endTime}
+                onChange={(e) => setEndTime(e.target.value)}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="color" className="text-right">
+                Color
+              </Label>
+              <Select value={shiftColor} onValueChange={setShiftColor}>
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Select color" />
+                </SelectTrigger>
+                <SelectContent>
+                  {colorOptions.map((color) => (
+                    <SelectItem key={color} value={color}>
+                      <div className="flex items-center">
+                        <div 
+                          className={`w-4 h-4 mr-2 rounded ${colorMap[color].bg}`} 
+                        />
+                        <span className="capitalize">{color}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="col-span-4 mt-2">
+              <div className="flex flex-wrap gap-2">
+                {colorOptions.map((color) => (
+                  <Button 
+                    key={color}
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className={cn(
+                      "w-8 h-8 p-0 rounded-md",
+                      colorMap[color].bg,
+                      shiftColor === color && "ring-2 ring-primary"
+                    )}
+                    onClick={() => setShiftColor(color)}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveShift}>
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

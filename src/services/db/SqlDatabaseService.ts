@@ -1,3 +1,4 @@
+
 import { Machine, Part, Consumable, RawMaterial, Unit, CalendarState, PartConsumable, PartRawMaterial } from '@/types/all';
 
 // Generate unique ID
@@ -5,6 +6,13 @@ const generateId = (): string => {
   return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 };
 
+/**
+ * This service uses localStorage as a persistence layer.
+ * It's named SqlDatabaseService for compatibility reasons but actually doesn't use SQL.
+ * 
+ * NOTE: This isn't a true SQL database. In a production environment, 
+ * this would be replaced with a real database implementation.
+ */
 class SqlDatabaseService {
   private db: any = null;
   private initialized = false;
@@ -35,9 +43,9 @@ class SqlDatabaseService {
       }
       
       this.initialized = true;
-      console.info('SQL Database Service initialized successfully');
+      console.info('Data persistence layer initialized successfully');
     } catch (error) {
-      console.error('Failed to initialize database:', error);
+      console.error('Failed to initialize persistence layer:', error);
       throw error;
     }
   }
@@ -337,6 +345,7 @@ class SqlDatabaseService {
     
     // Deep clone the calendar data to prevent reference issues
     if (this.db.calendar) {
+      console.log("Getting calendar state, current data:", this.db.calendar);
       return JSON.parse(JSON.stringify(this.db.calendar));
     }
     return this.db.calendar;
@@ -353,13 +362,13 @@ class SqlDatabaseService {
     
     // Make a deep clone of the calendar state to prevent reference issues
     this.db.calendar = JSON.parse(JSON.stringify(calendarState));
-    console.log("Saving calendar state to SQL:", this.db.calendar);
+    console.log("Saving calendar state:", this.db.calendar);
     
     try {
       await this.saveToStorage();
-      console.log("Calendar state saved successfully to SQL");
+      console.log("Calendar state saved successfully");
     } catch (error) {
-      console.error("Error saving calendar state to SQL:", error);
+      console.error("Error saving calendar state:", error);
       throw error;
     }
   }
@@ -382,6 +391,7 @@ class SqlDatabaseService {
       partRawMaterials: []
     };
     await this.saveToStorage();
+    console.log("Database cleared");
   }
 }
 

@@ -25,66 +25,6 @@ const generateId = (): string => {
   return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 };
 
-const generateRandomMachine = (existingIds: string[], category: string): Machine => {
-  let id = generateId();
-  while (existingIds.includes(id)) {
-    id = generateId();
-  }
-  
-  const availability = Math.floor(Math.random() * 40) + 60;
-  const setupTime = `${Math.floor(Math.random() * 51) + 10} min`;
-  
-  const today = new Date();
-  const lastMaintenance = new Date(today);
-  lastMaintenance.setDate(lastMaintenance.getDate() - Math.floor(Math.random() * 30));
-  
-  const nextMaintenance = new Date(today);
-  nextMaintenance.setDate(nextMaintenance.getDate() + Math.floor(Math.random() * 60) + 30);
-  
-  const machineNames = [
-    'CNC Router',
-    'Laser Cutter',
-    'Injection Molder',
-    'Assembly Robot',
-    'Welding Station',
-    'Heat Press',
-    'Hydraulic Press',
-    'Paint Booth',
-    'Conveyor System',
-    'Packaging Machine',
-    'Grinding Machine',
-    'Milling Machine',
-    'Drilling Station',
-    'Lathe',
-    'Sanding Machine'
-  ];
-  
-  const statusOptions: Array<'Operational' | 'Maintenance' | 'Offline'> = [
-    'Operational', 'Operational', 'Operational', 'Operational', 'Operational', 
-    'Operational', 'Operational', 'Maintenance', 'Maintenance', 'Offline'
-  ];
-  const randomStatus = statusOptions[Math.floor(Math.random() * statusOptions.length)];
-  
-  const randomName = machineNames[Math.floor(Math.random() * machineNames.length)];
-  
-  const hourlyCost = Math.floor(Math.random() * 151) + 50;
-  
-  const labourPersonHour = Math.floor(Math.random() * 4) + 1;
-  
-  return {
-    id,
-    name: randomName,
-    status: randomStatus,
-    availability,
-    setupTime,
-    lastMaintenance: lastMaintenance.toISOString().split('T')[0],
-    nextMaintenance: nextMaintenance.toISOString().split('T')[0],
-    category,
-    hourlyCost,
-    labourPersonHour
-  };
-};
-
 const Machines = () => {
   const { machines, setMachines, machineCategories, setMachineCategories, addMachine, removeMachine } = useData();
   const [openMachine, setOpenMachine] = useState<Machine | null>(null);
@@ -149,24 +89,6 @@ const Machines = () => {
     } catch (error) {
       console.error('Error saving machine:', error);
       toast.error('Failed to save machine');
-    }
-  };
-  
-  const handleGenerateRandomMachines = async () => {
-    try {
-      const existingIds = machines.map(m => m.id);
-      
-      for (let i = 0; i < 5; i++) {
-        const randomCategory = machineCategories[Math.floor(Math.random() * machineCategories.length)];
-        const newMachine = generateRandomMachine(existingIds, randomCategory);
-        await addMachine(newMachine);
-        existingIds.push(newMachine.id);
-      }
-      
-      toast.success('5 random machines generated');
-    } catch (error) {
-      console.error('Error generating random machines:', error);
-      toast.error('Failed to generate random machines');
     }
   };
   
@@ -305,12 +227,6 @@ const Machines = () => {
             onClick={() => setIsCategoryManagerOpen(true)}
           >
             Manage Categories
-          </Button>
-          <Button 
-            variant="secondary" 
-            onClick={handleGenerateRandomMachines}
-          >
-            Generate Random
           </Button>
           <Button onClick={handleAddMachine}>
             <Plus className="h-4 w-4 mr-2" />
