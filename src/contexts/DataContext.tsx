@@ -71,12 +71,12 @@ interface DataContextType {
   addHoliday: (holiday: Holiday) => Promise<void>;
   removeHoliday: (id: string) => Promise<void>;
   addShiftTime: (shiftTime: ShiftTime) => Promise<void>;
+  updateShiftTime: (shiftTime: ShiftTime) => Promise<void>;
   removeShiftTime: (id: string) => Promise<void>;
   toggleShift: (date: string, shiftTimeId: string) => Promise<void>;
   setViewDate: (date: string) => Promise<void>;
 }
 
-// Create context with initial empty values
 const DataContext = createContext<DataContextType>({
   isLoading: true,
   machines: [],
@@ -124,19 +124,17 @@ const DataContext = createContext<DataContextType>({
   addPartRawMaterial: async () => {},
   removePartRawMaterial: async () => {},
   updatePartRawMaterial: async () => {},
-
-  // Calendar
+  
   addHoliday: async () => {},
   removeHoliday: async () => {},
   addShiftTime: async () => {},
+  updateShiftTime: async () => {},
   removeShiftTime: async () => {},
   toggleShift: async () => {},
   setViewDate: async () => {},
 });
 
-// Provider component
 export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // State for each data type
   const [isLoading, setIsLoading] = useState(true);
   const [machines, setMachines] = useState<Machine[]>([]);
   const [parts, setParts] = useState<Part[]>([]);
@@ -146,32 +144,26 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [partRawMaterials, setPartRawMaterials] = useState<PartRawMaterial[]>([]);
   const [calendarState, setCalendarState] = useState<CalendarState | null>(null);
   
-  // Units and categories
   const [units, setUnits] = useState<string[]>(["pcs", "kg", "l", "m"]);
   const [machineCategories, setMachineCategories] = useState<string[]>(["Uncategorized", "CNC", "Assembly", "Packaging"]);
   const [partCategories, setPartCategories] = useState<string[]>(["Uncategorized", "Electronic", "Mechanical", "Plastic"]);
   
-  // Initialize database and load data
   useEffect(() => {
     const initializeData = async () => {
       try {
-        // Initialize the database
         await SqlDatabaseService.initialize();
         
-        // Load initial data
         const loadedMachines = await SqlDatabaseService.getMachines();
         const loadedParts = await SqlDatabaseService.getParts();
         const loadedConsumables = await SqlDatabaseService.getConsumables();
         const loadedRawMaterials = await SqlDatabaseService.getRawMaterials();
         const loadedCalendarState = await SqlDatabaseService.getCalendarState();
         
-        // Update state
         setMachines(loadedMachines || []);
         setParts(loadedParts || []);
         setConsumables(loadedConsumables || []);
         setRawMaterials(loadedRawMaterials || []);
         
-        // Initialize calendar state if not exists
         if (!loadedCalendarState) {
           const initialCalendarState: CalendarState = {
             shiftTimes: [
@@ -218,7 +210,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     initializeData();
   }, []);
   
-  // Machine methods
   const addMachine = async (machine: Machine) => {
     try {
       await SqlDatabaseService.saveMachine(machine);
@@ -248,7 +239,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
   
-  // Part methods
   const addPart = async (part: Part) => {
     try {
       await SqlDatabaseService.savePart(part);
@@ -278,7 +268,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
   
-  // Consumable methods
   const addConsumable = async (consumable: Consumable) => {
     try {
       await SqlDatabaseService.saveConsumable(consumable);
@@ -308,7 +297,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
   
-  // Raw Material methods
   const addRawMaterial = async (rawMaterial: RawMaterial) => {
     try {
       await SqlDatabaseService.saveRawMaterial(rawMaterial);
@@ -338,7 +326,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
   
-  // Part Relationships methods
   const addPartConsumable = async (relationship: PartConsumable) => {
     try {
       const part = parts.find(p => p.id === relationship.partId);
@@ -457,7 +444,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Calendar methods
   const addHoliday = async (holiday: Holiday) => {
     try {
       if (calendarState) {
@@ -503,6 +489,28 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     } catch (error) {
       console.error('Error adding shift time:', error);
+    }
+  };
+
+  const updateShiftTime = async (shiftTime: ShiftTime) => {
+    try {
+      if (calendarState) {
+        const updatedCalendarState = {
+          ...calendarState,
+          shiftTimes: calendarState.shiftTimes.map(shift => 
+            shift.id === shiftTime.id ? shiftTime : shift
+          )
+        };
+        
+        console.log("Updating shift time:", shiftTime);
+        console.log("Updated calendar state:", updatedCalendarState);
+        
+        await SqlDatabaseService.setCalendarState(updatedCalendarState);
+        setCalendarState(updatedCalendarState);
+      }
+    } catch (error) {
+      console.error('Error updating shift time:', error);
+      throw error;
     }
   };
 
@@ -580,7 +588,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Context value object
   const contextValue: DataContextType = {
     isLoading,
     machines,
@@ -591,7 +598,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     partRawMaterials,
     calendarState,
     
-    // Units and categories
     units,
     setUnits,
     machineCategories,
@@ -599,7 +605,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     partCategories,
     setPartCategories,
     
-    // Direct state setters
     setMachines,
     setParts,
     setConsumables,
@@ -629,16 +634,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     removePartRawMaterial,
     updatePartRawMaterial,
     
-    // Calendar methods
     addHoliday,
     removeHoliday,
     addShiftTime,
+    updateShiftTime,
     removeShiftTime,
     toggleShift,
     setViewDate,
   };
 
-  // If loading, show loading screen
   if (isLoading) {
     return <LoadingScreen />;
   }

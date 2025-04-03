@@ -1,4 +1,3 @@
-
 import { Machine, Part, Consumable, RawMaterial, Unit, CalendarState, PartConsumable, PartRawMaterial } from '@/types/all';
 
 // Generate unique ID
@@ -335,6 +334,11 @@ class SqlDatabaseService {
   // Calendar methods
   async getCalendarState(): Promise<CalendarState | null> {
     if (!this.initialized) await this.initialize();
+    
+    // Deep clone the calendar data to prevent reference issues
+    if (this.db.calendar) {
+      return JSON.parse(JSON.stringify(this.db.calendar));
+    }
     return this.db.calendar;
   }
 
@@ -347,14 +351,15 @@ class SqlDatabaseService {
     if (!calendarState.holidays) calendarState.holidays = [];
     if (!calendarState.viewDate) calendarState.viewDate = new Date().toISOString().split('T')[0];
     
-    this.db.calendar = calendarState;
-    console.log("Saving calendar state:", calendarState);
+    // Make a deep clone of the calendar state to prevent reference issues
+    this.db.calendar = JSON.parse(JSON.stringify(calendarState));
+    console.log("Saving calendar state to SQL:", this.db.calendar);
     
     try {
       await this.saveToStorage();
-      console.log("Calendar state saved successfully");
+      console.log("Calendar state saved successfully to SQL");
     } catch (error) {
-      console.error("Error saving calendar state:", error);
+      console.error("Error saving calendar state to SQL:", error);
       throw error;
     }
   }
