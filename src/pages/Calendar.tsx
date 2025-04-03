@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import OverviewCalendar from '@/components/calendar/OverviewCalendar';
@@ -8,6 +8,7 @@ import HolidayManager from '@/components/calendar/HolidayManager';
 import ShiftTimeManager from '@/components/calendar/ShiftTimeManager';
 import { format, isValid, parseISO } from 'date-fns';
 import { useData } from '@/contexts/DataContext';
+import { toast } from "sonner";
 
 const Calendar = () => {
   const [activeTab, setActiveTab] = useState("shifts");
@@ -34,7 +35,7 @@ const Calendar = () => {
   
   // Ensure we have a valid Date object or create a new one
   const viewDate = (() => {
-    if (!calendarState) return new Date();
+    if (!calendarState || !calendarState.viewDate) return new Date();
     try {
       const parsedDate = parseISO(calendarState.viewDate);
       return isValid(parsedDate) ? parsedDate : new Date();
@@ -44,17 +45,24 @@ const Calendar = () => {
     }
   })();
 
-  const handleDateChange = (date: Date) => {
+  const handleDateChange = async (date: Date) => {
     try {
       if (isValid(date)) {
-        setViewDate(safeFormat(date, 'yyyy-MM-dd'));
+        await setViewDate(safeFormat(date, 'yyyy-MM-dd'));
       } else {
         console.error('Invalid date in handleDateChange:', date);
+        toast.error("Invalid date selected");
       }
     } catch (error) {
       console.error('Error in handleDateChange:', error);
+      toast.error("Failed to update calendar view");
     }
   };
+
+  // Log current state for debugging
+  useEffect(() => {
+    console.log("Current calendar state:", calendarState);
+  }, [calendarState]);
 
   return (
     <DashboardLayout 

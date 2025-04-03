@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { PlusCircle, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -7,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useData } from '@/contexts/DataContext';
 import { ShiftTime } from '@/types/calendar';
+import { toast } from "sonner";
 
 interface ShiftTimeManagerProps {
   shiftTimes: ShiftTime[];
@@ -27,29 +27,42 @@ const ShiftTimeManager = ({ shiftTimes }: ShiftTimeManagerProps) => {
     { name: 'Purple', value: 'purple' },
   ];
 
-  const handleAddShiftTime = () => {
+  const handleAddShiftTime = async () => {
     if (!name || !startTime || !endTime) return;
 
     if (addShiftTime) {
-      addShiftTime({
-        id: Date.now().toString(),
-        name,
-        startTime,
-        endTime,
-        color,
-      });
-      
-      // Reset form
-      setName('');
-      setStartTime('');
-      setEndTime('');
-      setColor('blue');
+      try {
+        await addShiftTime({
+          id: Date.now().toString(),
+          name,
+          startTime,
+          endTime,
+          color,
+        });
+        
+        // Reset form
+        setName('');
+        setStartTime('');
+        setEndTime('');
+        setColor('blue');
+        
+        toast.success("Shift time added successfully");
+      } catch (error) {
+        console.error("Error adding shift time:", error);
+        toast.error("Failed to add shift time");
+      }
     }
   };
 
-  const handleRemoveShiftTime = (id: string) => {
+  const handleRemoveShiftTime = async (id: string) => {
     if (removeShiftTime) {
-      removeShiftTime(id);
+      try {
+        await removeShiftTime(id);
+        toast.success("Shift time removed successfully");
+      } catch (error) {
+        console.error("Error removing shift time:", error);
+        toast.error("Failed to remove shift time");
+      }
     }
   };
 

@@ -1,5 +1,4 @@
-
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   startOfWeek,
   addDays,
@@ -18,6 +17,7 @@ import { Toggle } from '@/components/ui/toggle';
 import { cn } from '@/lib/utils';
 import { useData } from '@/contexts/DataContext';
 import { Holiday, ShiftTime, DayShiftToggle } from '@/types/calendar';
+import { toast } from "sonner";
 
 interface WeeklyShiftViewProps {
   viewDate: Date;
@@ -37,7 +37,7 @@ const WeeklyShiftView = ({
   const [weekStart, setWeekStart] = useState(() => startOfWeek(currentDate, { weekStartsOn: 1 }));
 
   // Change week when date changes
-  useMemo(() => {
+  useEffect(() => {
     // Only update if the new date is outside current week
     if (!isSameWeek(viewDate, weekStart, { weekStartsOn: 1 })) {
       setWeekStart(startOfWeek(viewDate, { weekStartsOn: 1 }));
@@ -80,9 +80,14 @@ const WeeklyShiftView = ({
     );
   };
 
-  const handleShiftToggle = (date: Date, shiftTimeId: string) => {
+  const handleShiftToggle = async (date: Date, shiftTimeId: string) => {
     if (toggleShift) {
-      toggleShift(format(date, 'yyyy-MM-dd'), shiftTimeId);
+      try {
+        await toggleShift(format(date, 'yyyy-MM-dd'), shiftTimeId);
+      } catch (error) {
+        console.error("Error toggling shift:", error);
+        toast.error("Failed to update shift");
+      }
     }
   };
 

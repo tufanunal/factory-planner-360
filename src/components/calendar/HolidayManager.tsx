@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { format } from 'date-fns';
 import { PlusCircle, Calendar as CalendarIcon, Trash2 } from 'lucide-react';
@@ -12,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { cn } from '@/lib/utils';
 import { useData } from '@/contexts/DataContext';
 import { Holiday } from '@/types/calendar';
+import { toast } from "sonner";
 
 interface HolidayManagerProps {
   holidays: Holiday[];
@@ -23,27 +23,40 @@ const HolidayManager = ({ holidays }: HolidayManagerProps) => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [isRecurringYearly, setIsRecurringYearly] = useState(false);
 
-  const handleAddHoliday = () => {
+  const handleAddHoliday = async () => {
     if (!holidayName || !selectedDate) return;
 
     if (addHoliday) {
-      addHoliday({
-        id: Date.now().toString(),
-        name: holidayName,
-        date: format(selectedDate, 'yyyy-MM-dd'),
-        isRecurringYearly
-      });
-      
-      // Reset form
-      setHolidayName('');
-      setSelectedDate(undefined);
-      setIsRecurringYearly(false);
+      try {
+        await addHoliday({
+          id: Date.now().toString(),
+          name: holidayName,
+          date: format(selectedDate, 'yyyy-MM-dd'),
+          isRecurringYearly
+        });
+        
+        // Reset form
+        setHolidayName('');
+        setSelectedDate(undefined);
+        setIsRecurringYearly(false);
+        
+        toast.success("Holiday added successfully");
+      } catch (error) {
+        console.error("Error adding holiday:", error);
+        toast.error("Failed to add holiday");
+      }
     }
   };
 
-  const handleRemoveHoliday = (id: string) => {
+  const handleRemoveHoliday = async (id: string) => {
     if (removeHoliday) {
-      removeHoliday(id);
+      try {
+        await removeHoliday(id);
+        toast.success("Holiday removed successfully");
+      } catch (error) {
+        console.error("Error removing holiday:", error);
+        toast.error("Failed to remove holiday");
+      }
     }
   };
 

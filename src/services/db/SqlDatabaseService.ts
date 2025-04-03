@@ -58,6 +58,14 @@ class SqlDatabaseService {
         this.db.units = this.db.units || [];
         this.db.partConsumables = this.db.partConsumables || [];
         this.db.partRawMaterials = this.db.partRawMaterials || [];
+        
+        // Make sure calendar data has correct structure if it exists
+        if (this.db.calendar) {
+          this.db.calendar.shiftTimes = this.db.calendar.shiftTimes || [];
+          this.db.calendar.dayShiftToggles = this.db.calendar.dayShiftToggles || [];
+          this.db.calendar.holidays = this.db.calendar.holidays || [];
+          this.db.calendar.viewDate = this.db.calendar.viewDate || new Date().toISOString().split('T')[0];
+        }
       }
     } catch (error) {
       console.error('Failed to load data from storage:', error);
@@ -85,7 +93,8 @@ class SqlDatabaseService {
           return;
         }
         
-        localStorage.setItem(this.storageKey, JSON.stringify(this.db));
+        const dataToSave = JSON.stringify(this.db);
+        localStorage.setItem(this.storageKey, dataToSave);
         console.log('Data saved to storage successfully');
         resolve();
       } catch (error) {
@@ -331,7 +340,42 @@ class SqlDatabaseService {
 
   async setCalendarState(calendarState: CalendarState): Promise<void> {
     if (!this.initialized) await this.initialize();
+    
+    // Ensure all calendar properties have the correct structure
+    if (!calendarState.shiftTimes) calendarState.shiftTimes = [];
+    if (!calendarState.dayShiftToggles) calendarState.dayShiftToggles = [];
+    if (!calendarState.holidays) calendarState.holidays = [];
+    if (!calendarState.viewDate) calendarState.viewDate = new Date().toISOString().split('T')[0];
+    
     this.db.calendar = calendarState;
+    console.log("Saving calendar state:", calendarState);
+    
+    try {
+      await this.saveToStorage();
+      console.log("Calendar state saved successfully");
+    } catch (error) {
+      console.error("Error saving calendar state:", error);
+      throw error;
+    }
+  }
+  
+  // For debugging and troubleshooting
+  async dumpDatabase(): Promise<any> {
+    if (!this.initialized) await this.initialize();
+    return this.db;
+  }
+  
+  async clearDatabase(): Promise<void> {
+    this.db = {
+      machines: [],
+      parts: [],
+      consumables: [],
+      rawMaterials: [],
+      units: [],
+      calendar: null,
+      partConsumables: [],
+      partRawMaterials: []
+    };
     await this.saveToStorage();
   }
 }
