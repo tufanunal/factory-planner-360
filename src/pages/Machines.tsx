@@ -86,7 +86,7 @@ const generateRandomMachine = (existingIds: string[], category: string): Machine
 };
 
 const Machines = () => {
-  const { machines, setMachines, machineCategories, setMachineCategories } = useData();
+  const { machines, setMachines, machineCategories, setMachineCategories, addMachine, removeMachine } = useData();
   const [openMachine, setOpenMachine] = useState<Machine | null>(null);
   const [isAddingMachine, setIsAddingMachine] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
@@ -114,39 +114,60 @@ const Machines = () => {
     setIsDeleteConfirmOpen(true);
   };
   
-  const confirmDeleteMachine = () => {
+  const confirmDeleteMachine = async () => {
     if (machineToDelete) {
-      setMachines(machines.filter(m => m.id !== machineToDelete.id));
-      toast.success(`Machine ${machineToDelete.name} deleted successfully`);
-      setIsDeleteConfirmOpen(false);
-      setMachineToDelete(null);
+      try {
+        await removeMachine(machineToDelete.id);
+        toast.success(`Machine ${machineToDelete.name} deleted successfully`);
+      } catch (error) {
+        console.error('Error deleting machine:', error);
+        toast.error('Failed to delete machine');
+      } finally {
+        setIsDeleteConfirmOpen(false);
+        setMachineToDelete(null);
+      }
     }
   };
   
-  const handleSaveMachine = (machine: Machine) => {
-    const isEditing = !!machines.find(m => m.id === machine.id);
-    
-    if (isEditing) {
-      setMachines(machines.map(m => m.id === machine.id ? machine : m));
-    } else {
-      setMachines([...machines, { ...machine, id: generateId() }]);
+  const handleSaveMachine = async (machine: Machine) => {
+    try {
+      const isEditing = !!machines.find(m => m.id === machine.id);
+      
+      if (isEditing) {
+        setMachines(machines.map(m => m.id === machine.id ? machine : m));
+      } else {
+        const newMachine = { 
+          ...machine, 
+          id: machine.id || generateId() 
+        };
+        await addMachine(newMachine);
+        toast.success('Machine added successfully');
+      }
+      
+      setIsAddingMachine(false);
+      setOpenMachine(null);
+    } catch (error) {
+      console.error('Error saving machine:', error);
+      toast.error('Failed to save machine');
     }
-    
-    setIsAddingMachine(false);
-    setOpenMachine(null);
   };
   
-  const handleGenerateRandomMachines = () => {
-    const existingIds = machines.map(m => m.id);
-    const newMachines: Machine[] = [];
-    
-    for (let i = 0; i < 5; i++) {
-      const randomCategory = machineCategories[Math.floor(Math.random() * machineCategories.length)];
-      newMachines.push(generateRandomMachine(existingIds, randomCategory));
+  const handleGenerateRandomMachines = async () => {
+    try {
+      const existingIds = machines.map(m => m.id);
+      
+      for (let i = 0; i < 5; i++) {
+        const randomCategory = machineCategories[Math.floor(Math.random() * machineCategories.length)];
+        const newMachine = generateRandomMachine(existingIds, randomCategory);
+        await addMachine(newMachine);
+        existingIds.push(newMachine.id);
+      }
+      
+      toast.success('5 random machines generated');
+    } catch (error) {
+      console.error('Error generating random machines:', error);
+      toast.error('Failed to generate random machines');
     }
-    
-    setMachines([...machines, ...newMachines]);
-    toast.success('5 random machines generated');
   };
   
   const filteredMachines = selectedCategory 

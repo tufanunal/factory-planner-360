@@ -10,12 +10,12 @@ class SqlDatabaseService {
   private db: any = null;
   private initialized = false;
   private storageKey = 'factory-planner-data';
-
+  
   async initialize(): Promise<void> {
     if (this.initialized) return;
     
     try {
-      // Load data from localStorage
+      // Load data from localStorage first
       this.loadFromStorage();
       
       if (!this.db) {
@@ -32,7 +32,7 @@ class SqlDatabaseService {
         };
         
         // Save initial data
-        this.saveToStorage();
+        await this.saveToStorage();
       }
       
       this.initialized = true;
@@ -75,27 +75,39 @@ class SqlDatabaseService {
     }
   }
   
-  private saveToStorage(): void {
-    try {
-      localStorage.setItem(this.storageKey, JSON.stringify(this.db));
-      console.log('Data saved to storage:', this.db);
-    } catch (error) {
-      console.error('Failed to save data to storage:', error);
-      // Try to save with minimal data if storage limit is an issue
+  private async saveToStorage(): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
       try {
-        const minimalData = { 
-          machines: this.db.machines, 
-          parts: this.db.parts,
-          consumables: this.db.consumables,
-          rawMaterials: this.db.rawMaterials,
-          calendar: this.db.calendar
-        };
-        localStorage.setItem(this.storageKey, JSON.stringify(minimalData));
-        console.log('Saved minimal data to storage');
-      } catch (fallbackError) {
-        console.error('Critical error: Could not save even minimal data', fallbackError);
+        // Check if database is initialized before saving
+        if (!this.db) {
+          console.error('Attempted to save before database was initialized');
+          reject(new Error('Database not initialized'));
+          return;
+        }
+        
+        localStorage.setItem(this.storageKey, JSON.stringify(this.db));
+        console.log('Data saved to storage successfully');
+        resolve();
+      } catch (error) {
+        console.error('Failed to save data to storage:', error);
+        // Try to save with minimal data if storage limit is an issue
+        try {
+          const minimalData = { 
+            machines: this.db.machines, 
+            parts: this.db.parts,
+            consumables: this.db.consumables,
+            rawMaterials: this.db.rawMaterials,
+            calendar: this.db.calendar
+          };
+          localStorage.setItem(this.storageKey, JSON.stringify(minimalData));
+          console.log('Saved minimal data to storage');
+          resolve();
+        } catch (fallbackError) {
+          console.error('Critical error: Could not save even minimal data', fallbackError);
+          reject(fallbackError);
+        }
       }
-    }
+    });
   }
 
   // Units methods
@@ -117,14 +129,14 @@ class SqlDatabaseService {
       this.db.units.push(unit);
     }
     
-    this.saveToStorage();
+    await this.saveToStorage();
     return unit;
   }
 
   async deleteUnit(id: string): Promise<void> {
     if (!this.initialized) await this.initialize();
     this.db.units = this.db.units.filter((u: Unit) => u.id !== id);
-    this.saveToStorage();
+    await this.saveToStorage();
   }
 
   // Machine methods
@@ -146,14 +158,14 @@ class SqlDatabaseService {
       this.db.machines.push(machine);
     }
     
-    this.saveToStorage();
+    await this.saveToStorage();
     return machine;
   }
 
   async deleteMachine(id: string): Promise<void> {
     if (!this.initialized) await this.initialize();
     this.db.machines = this.db.machines.filter((m: Machine) => m.id !== id);
-    this.saveToStorage();
+    await this.saveToStorage();
   }
 
   // Part methods
@@ -175,14 +187,14 @@ class SqlDatabaseService {
       this.db.parts.push(part);
     }
     
-    this.saveToStorage();
+    await this.saveToStorage();
     return part;
   }
 
   async deletePart(id: string): Promise<void> {
     if (!this.initialized) await this.initialize();
     this.db.parts = this.db.parts.filter((p: Part) => p.id !== id);
-    this.saveToStorage();
+    await this.saveToStorage();
   }
 
   // Consumable methods
@@ -204,14 +216,14 @@ class SqlDatabaseService {
       this.db.consumables.push(consumable);
     }
     
-    this.saveToStorage();
+    await this.saveToStorage();
     return consumable;
   }
 
   async deleteConsumable(id: string): Promise<void> {
     if (!this.initialized) await this.initialize();
     this.db.consumables = this.db.consumables.filter((c: Consumable) => c.id !== id);
-    this.saveToStorage();
+    await this.saveToStorage();
   }
 
   // Raw Material methods
@@ -233,14 +245,14 @@ class SqlDatabaseService {
       this.db.rawMaterials.push(material);
     }
     
-    this.saveToStorage();
+    await this.saveToStorage();
     return material;
   }
 
   async deleteRawMaterial(id: string): Promise<void> {
     if (!this.initialized) await this.initialize();
     this.db.rawMaterials = this.db.rawMaterials.filter((m: RawMaterial) => m.id !== id);
-    this.saveToStorage();
+    await this.saveToStorage();
   }
 
   // Part Consumable methods
@@ -265,7 +277,7 @@ class SqlDatabaseService {
       this.db.partConsumables.push(partConsumable);
     }
     
-    this.saveToStorage();
+    await this.saveToStorage();
     return partConsumable;
   }
 
@@ -274,7 +286,7 @@ class SqlDatabaseService {
     this.db.partConsumables = this.db.partConsumables.filter(
       (pc: PartConsumable) => !(pc.partId === partId && pc.consumableId === consumableId)
     );
-    this.saveToStorage();
+    await this.saveToStorage();
   }
 
   // Part Raw Material methods
@@ -299,7 +311,7 @@ class SqlDatabaseService {
       this.db.partRawMaterials.push(partRawMaterial);
     }
     
-    this.saveToStorage();
+    await this.saveToStorage();
     return partRawMaterial;
   }
 
@@ -308,7 +320,7 @@ class SqlDatabaseService {
     this.db.partRawMaterials = this.db.partRawMaterials.filter(
       (prm: PartRawMaterial) => !(prm.partId === partId && prm.rawMaterialId === rawMaterialId)
     );
-    this.saveToStorage();
+    await this.saveToStorage();
   }
 
   // Calendar methods
@@ -320,7 +332,7 @@ class SqlDatabaseService {
   async setCalendarState(calendarState: CalendarState): Promise<void> {
     if (!this.initialized) await this.initialize();
     this.db.calendar = calendarState;
-    this.saveToStorage();
+    await this.saveToStorage();
   }
 }
 
