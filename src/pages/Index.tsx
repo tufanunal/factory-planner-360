@@ -1,4 +1,3 @@
-
 import { 
   Settings, 
   Box, 
@@ -21,9 +20,12 @@ const Index = () => {
   // Calculate metrics from actual data
   useEffect(() => {
     const activePartsCount = parts.filter(part => part.status === 'Active').length;
-    const availableMachines = machines.length > 0 
-      ? Math.round((machines.filter(m => m.status === 'Operational').length / machines.length) * 100) 
+    
+    // Calculate average availability instead of operational percentage
+    const averageAvailability = machines.length > 0 
+      ? Math.round(machines.reduce((sum, m) => sum + (m.availability || 0), 0) / machines.length) 
       : 0;
+    
     const consumablesCount = consumables.length;
     const rawMaterialsCount = rawMaterials.length;
     const shiftTimeCount = calendarState?.shiftTimes?.length || 0;
@@ -34,7 +36,7 @@ const Index = () => {
         description: 'Track production planning and availability',
         icon: <Settings size={24} />,
         path: '/machines',
-        metric: { value: `${availableMachines}%`, label: 'Availability' }
+        metric: { value: `${averageAvailability}%`, label: 'Availability' }
       },
       {
         title: 'Parts',
