@@ -1,4 +1,5 @@
-import { useState } from 'react';
+
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,6 +15,7 @@ import {
   DialogFooter,
   DialogDescription
 } from '@/components/ui/dialog';
+import SqlDatabaseService from '@/services/db/SqlDatabaseService';
 
 // Default category that cannot be deleted
 export const DEFAULT_CATEGORY = 'Uncategorized';
@@ -37,19 +39,26 @@ const CategoryManager = ({
   const [newCategory, setNewCategory] = useState('');
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editValue, setEditValue] = useState('');
+  const [localCategories, setLocalCategories] = useState<string[]>([]);
 
-  const handleAddCategory = () => {
+  // Initialize local categories from context or props
+  useEffect(() => {
+    setLocalCategories([...machineCategories]);
+  }, [machineCategories]);
+
+  const handleAddCategory = async () => {
     if (!newCategory.trim()) {
       toast.error('Category name cannot be empty');
       return;
     }
     
-    if (machineCategories.includes(newCategory)) {
+    if (localCategories.includes(newCategory)) {
       toast.error('Category already exists');
       return;
     }
     
-    const updatedCategories = [...machineCategories, newCategory];
+    const updatedCategories = [...localCategories, newCategory];
+    setLocalCategories(updatedCategories);
     
     // Use the prop function if provided, otherwise use the context function
     if (onCategoryChange) {
@@ -58,17 +67,20 @@ const CategoryManager = ({
       contextSetMachineCategories(updatedCategories);
     }
     
+    // Ensure updated categories are saved to localStorage
+    localStorage.setItem('factory-planner-machine-categories', JSON.stringify(updatedCategories));
+    
     setNewCategory('');
     toast.success('Category added successfully');
   };
 
   const startEditing = (index: number) => {
-    if (machineCategories[index] === DEFAULT_CATEGORY) {
+    if (localCategories[index] === DEFAULT_CATEGORY) {
       toast.error('Cannot edit the default category');
       return;
     }
     setEditingIndex(index);
-    setEditValue(machineCategories[index]);
+    setEditValue(localCategories[index]);
   };
 
   const cancelEditing = () => {
@@ -76,19 +88,34 @@ const CategoryManager = ({
     setEditValue('');
   };
 
-  const saveEditing = (index: number) => {
+  const saveEditing = async (index: number) => {
     if (!editValue.trim()) {
       toast.error('Category name cannot be empty');
       return;
     }
     
-    if (machineCategories.includes(editValue) && editValue !== machineCategories[index]) {
+    if (localCategories.includes(editValue) && editValue !== localCategories[index]) {
       toast.error('Category already exists');
       return;
     }
     
-    const updatedCategories = [...machineCategories];
+    const oldCategory = localCategories[index];
+    const updatedCategories = [...localCategories];
     updatedCategories[index] = editValue;
+    
+    setLocalCategories(updatedCategories);
+    
+    // Update machine categories in the database
+    try {
+      await SqlDatabaseService.initialize();
+      const machineService = new (SqlDatabaseService as any).machineService.constructor(
+        (SqlDatabaseService as any).db
+      );
+      machineService.updateMachineCategories(oldCategory, editValue);
+      await (SqlDatabaseService as any).saveToStorage();
+    } catch (error) {
+      console.error('Error updating machine categories:', error);
+    }
     
     // Use the prop function if provided, otherwise use the context function
     if (onCategoryChange) {
@@ -96,20 +123,43 @@ const CategoryManager = ({
     } else {
       contextSetMachineCategories(updatedCategories);
     }
+    
+    // Ensure updated categories are saved to localStorage
+    localStorage.setItem('factory-planner-machine-categories', JSON.stringify(updatedCategories));
     
     setEditingIndex(null);
     setEditValue('');
     toast.success('Category updated successfully');
   };
 
-  const handleDeleteCategory = (index: number) => {
-    if (machineCategories[index] === DEFAULT_CATEGORY) {
+  const handleDeleteCategory = async (index: number) => {
+    if (localCategories[index] === DEFAULT_CATEGORY) {
       toast.error('Cannot delete the default category');
       return;
     }
     
-    const categoryToDelete = machineCategories[index];
-    const updatedCategories = machineCategories.filter((_, i) => i !== index);
+    const categoryToDelete = localCategories[index];
+    const updatedCategories = localCategories.filter((_, i) => i !== index);
+    
+    setLocalCategories(updatedCategories);
+    
+    let machinesUsingCategory = 0;
+    
+    // Revert machines to default category in the database
+    try {
+      await SqlDatabaseService.initialize();
+      const machineService = new (SqlDatabaseService as any).machineService.constructor(
+        (SqlDatabaseService as any).db
+      );
+      machinesUsingCategory = machineService.revertCategoryToDefault(categoryToDelete);
+      await (SqlDatabaseService as any).saveToStorage();
+    } catch (error) {
+      console.error('Error reverting machine categories:', error);
+      // Count machines using the category even if database update fails
+      machinesUsingCategory = machines.filter(
+        machine => machine.category === categoryToDelete
+      ).length;
+    }
     
     // Use the prop function if provided, otherwise use the context function
     if (onCategoryChange) {
@@ -118,13 +168,11 @@ const CategoryManager = ({
       contextSetMachineCategories(updatedCategories);
     }
     
-    // Check if any machines use this category and revert them to default
-    const machinesUsingCategory = machines.filter(
-      machine => machine.category === categoryToDelete
-    );
+    // Ensure updated categories are saved to localStorage
+    localStorage.setItem('factory-planner-machine-categories', JSON.stringify(updatedCategories));
     
-    if (machinesUsingCategory.length > 0) {
-      toast.info(`${machinesUsingCategory.length} machines were reverted to ${DEFAULT_CATEGORY} category`);
+    if (machinesUsingCategory > 0) {
+      toast.info(`${machinesUsingCategory} machines were reverted to ${DEFAULT_CATEGORY} category`);
     }
     
     toast.success('Category deleted successfully');
@@ -145,7 +193,7 @@ const CategoryManager = ({
       </div>
       
       <div className="space-y-2">
-        {machineCategories.map((category, index) => (
+        {localCategories.map((category, index) => (
           <div 
             key={index} 
             className="flex items-center justify-between p-2 border rounded-md"
@@ -207,6 +255,7 @@ const CategoryManager = ({
             <DialogTitle>Machine Categories</DialogTitle>
             <DialogDescription>
               Manage and organize machine categories. The default category cannot be modified.
+              Changes will be applied to all machines using these categories.
             </DialogDescription>
           </DialogHeader>
           {categoryManagerContent}

@@ -26,6 +26,11 @@ export class MachineService {
       machine.category = DEFAULT_CATEGORY;
     }
     
+    // Ensure availability is a valid percentage between 0 and 100
+    if (machine.availability !== undefined) {
+      machine.availability = Math.max(0, Math.min(100, machine.availability));
+    }
+    
     if (existingIndex >= 0) {
       this.db.machines[existingIndex] = machine;
     } else {
@@ -42,5 +47,32 @@ export class MachineService {
     if (this.db.machines) {
       this.db.machines = this.db.machines.filter((m: Machine) => m.id !== id);
     }
+  }
+
+  // Update machine categories if the category is changed
+  updateMachineCategories(oldCategory: string, newCategory: string): void {
+    if (this.db.machines && oldCategory !== newCategory) {
+      this.db.machines = this.db.machines.map((m: Machine) => {
+        if (m.category === oldCategory) {
+          return { ...m, category: newCategory };
+        }
+        return m;
+      });
+    }
+  }
+
+  // Update machine categories when a category is deleted
+  revertCategoryToDefault(categoryToDelete: string): number {
+    let count = 0;
+    if (this.db.machines) {
+      this.db.machines = this.db.machines.map((m: Machine) => {
+        if (m.category === categoryToDelete) {
+          count++;
+          return { ...m, category: DEFAULT_CATEGORY };
+        }
+        return m;
+      });
+    }
+    return count;
   }
 }
