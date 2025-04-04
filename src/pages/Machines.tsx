@@ -8,7 +8,8 @@ import MachineCard from '@/components/machines/MachineCard';
 import MachineEditModal from '@/components/machines/MachineEditModal';
 import { Machine } from '@/types/machine';
 import { toast } from 'sonner';
-import { AlertDialog, 
+import { 
+  AlertDialog, 
   AlertDialogAction, 
   AlertDialogCancel, 
   AlertDialogContent, 
@@ -19,25 +20,17 @@ import { AlertDialog,
 } from '@/components/ui/alert-dialog';
 import CategoryManager from '@/components/machines/CategoryManager';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-
-const generateId = (): string => {
-  return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-};
+import { MachineStats } from '@/components/machines/MachineStats';
+import { MachineFilter } from '@/components/machines/MachineFilter';
 
 const Machines = () => {
-  const { machines, setMachines, machineCategories, setMachineCategories, addMachine, removeMachine } = useData();
+  const { machines, machineCategories, setMachineCategories, addMachine, removeMachine } = useData();
   const [openMachine, setOpenMachine] = useState<Machine | null>(null);
   const [isAddingMachine, setIsAddingMachine] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [machineToDelete, setMachineToDelete] = useState<Machine | null>(null);
   const [isCategoryManagerOpen, setIsCategoryManagerOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  
-  const totalMachines = machines.length;
-  const operationalMachines = machines.filter(m => m.status === 'Operational').length;
-  const maintenanceMachines = machines.filter(m => m.status === 'Maintenance').length;
-  const offlineMachines = machines.filter(m => m.status === 'Offline').length;
   
   const handleAddMachine = () => {
     setOpenMachine(null);
@@ -74,13 +67,12 @@ const Machines = () => {
       const isEditing = !!machines.find(m => m.id === machine.id);
       
       if (isEditing) {
-        setMachines(machines.map(m => m.id === machine.id ? machine : m));
+        // Machine is updated through the context
+        await addMachine(machine);
+        toast.success('Machine updated successfully');
       } else {
-        const newMachine = { 
-          ...machine, 
-          id: machine.id || generateId() 
-        };
-        await addMachine(newMachine);
+        // New machine is added
+        await addMachine(machine);
         toast.success('Machine added successfully');
       }
       
@@ -101,124 +93,15 @@ const Machines = () => {
       title="Machines" 
       description="View and manage all your production machines"
     >
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <Card className="animate-fade-in">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Machines</CardTitle>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              className="h-4 w-4 text-muted-foreground"
-            >
-              <rect width="20" height="14" x="2" y="5" rx="2" />
-              <path d="M2 10h20" />
-            </svg>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalMachines}</div>
-          </CardContent>
-        </Card>
-        <Card className="animate-fade-in delay-100">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Operational</CardTitle>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              className="h-4 w-4 text-muted-foreground"
-            >
-              <path d="M12 5v14" />
-              <path d="m5 12 7 7 7-7" />
-            </svg>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">{operationalMachines}</div>
-            <p className="text-xs text-muted-foreground">
-              {totalMachines > 0 
-                ? `${Math.round(operationalMachines / totalMachines * 100)}% of total`
-                : 'No machines'}
-            </p>
-          </CardContent>
-        </Card>
-        <Card className="animate-fade-in delay-200">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">In Maintenance</CardTitle>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              className="h-4 w-4 text-muted-foreground"
-            >
-              <path d="M12 5v14" />
-              <path d="m5 12 7 7 7-7" />
-            </svg>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">{maintenanceMachines}</div>
-            <p className="text-xs text-muted-foreground">
-              {totalMachines > 0 
-                ? `${Math.round(maintenanceMachines / totalMachines * 100)}% of total`
-                : 'No machines'}
-            </p>
-          </CardContent>
-        </Card>
-        <Card className="animate-fade-in delay-300">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Offline</CardTitle>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              className="h-4 w-4 text-muted-foreground"
-            >
-              <path d="M12 5v14" />
-              <path d="m5 12 7 7 7-7" />
-            </svg>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-600">{offlineMachines}</div>
-            <p className="text-xs text-muted-foreground">
-              {totalMachines > 0 
-                ? `${Math.round(offlineMachines / totalMachines * 100)}% of total`
-                : 'No machines'}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+      <MachineStats machines={machines} />
       
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
         <div>
-          <Tabs 
-            defaultValue={selectedCategory || "all"} 
-            className="w-full"
-            onValueChange={(value) => setSelectedCategory(value === "all" ? null : value)}
-          >
-            <TabsList className="mb-4">
-              <TabsTrigger value="all">All</TabsTrigger>
-              {machineCategories.map((category) => (
-                <TabsTrigger key={category} value={category}>
-                  {category}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
+          <MachineFilter 
+            categories={machineCategories}
+            selectedCategory={selectedCategory}
+            onCategoryChange={setSelectedCategory}
+          />
         </div>
         
         <div className="flex flex-wrap justify-end gap-2">

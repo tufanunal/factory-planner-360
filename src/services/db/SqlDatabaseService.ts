@@ -1,10 +1,14 @@
 
 import { Machine, Part, Consumable, RawMaterial, Unit, CalendarState, PartConsumable, PartRawMaterial } from '@/types/all';
-
-// Generate unique ID
-const generateId = (): string => {
-  return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-};
+import { StorageService } from './StorageService';
+import { UnitService } from './UnitService';
+import { MachineService } from './MachineService';
+import { PartService } from './PartService';
+import { ConsumableService } from './ConsumableService';
+import { RawMaterialService } from './RawMaterialService';
+import { PartConsumableService } from './PartConsumableService';
+import { PartRawMaterialService } from './PartRawMaterialService';
+import { CalendarService } from './CalendarService';
 
 /**
  * This service uses localStorage as a persistence layer.
@@ -16,7 +20,31 @@ const generateId = (): string => {
 class SqlDatabaseService {
   private db: any = null;
   private initialized = false;
-  private storageKey = 'factory-planner-data';
+  private storageService: StorageService;
+  
+  // Service instances
+  private unitService: UnitService;
+  private machineService: MachineService;
+  private partService: PartService;
+  private consumableService: ConsumableService;
+  private rawMaterialService: RawMaterialService;
+  private partConsumableService: PartConsumableService;
+  private partRawMaterialService: PartRawMaterialService;
+  private calendarService: CalendarService;
+  
+  constructor() {
+    this.storageService = new StorageService('factory-planner-data');
+    
+    // These will be initialized after this.db is loaded
+    this.unitService = new UnitService(this.db);
+    this.machineService = new MachineService(this.db);
+    this.partService = new PartService(this.db);
+    this.consumableService = new ConsumableService(this.db);
+    this.rawMaterialService = new RawMaterialService(this.db);
+    this.partConsumableService = new PartConsumableService(this.db);
+    this.partRawMaterialService = new PartRawMaterialService(this.db);
+    this.calendarService = new CalendarService(this.db);
+  }
   
   async initialize(): Promise<void> {
     if (this.initialized) return;
@@ -42,6 +70,9 @@ class SqlDatabaseService {
         await this.saveToStorage();
       }
       
+      // Reinitialize services with the loaded db
+      this.initializeServices();
+      
       this.initialized = true;
       console.info('Data persistence layer initialized successfully');
     } catch (error) {
@@ -50,11 +81,22 @@ class SqlDatabaseService {
     }
   }
   
+  private initializeServices(): void {
+    this.unitService = new UnitService(this.db);
+    this.machineService = new MachineService(this.db);
+    this.partService = new PartService(this.db);
+    this.consumableService = new ConsumableService(this.db);
+    this.rawMaterialService = new RawMaterialService(this.db);
+    this.partConsumableService = new PartConsumableService(this.db);
+    this.partRawMaterialService = new PartRawMaterialService(this.db);
+    this.calendarService = new CalendarService(this.db);
+  }
+  
   private loadFromStorage(): void {
     try {
-      const storedData = localStorage.getItem(this.storageKey);
-      if (storedData) {
-        this.db = JSON.parse(storedData);
+      const loadedDb = this.storageService.loadFromStorage<any>();
+      if (loadedDb) {
+        this.db = loadedDb;
         console.log('Data loaded from storage:', this.db);
         
         // Ensure all required collections exist
@@ -91,278 +133,176 @@ class SqlDatabaseService {
   }
   
   private async saveToStorage(): Promise<void> {
-    return new Promise<void>((resolve, reject) => {
+    if (!this.db) {
+      console.error('Attempted to save before database was initialized');
+      throw new Error('Database not initialized');
+    }
+    
+    try {
+      await this.storageService.saveToStorage(this.db);
+    } catch (error) {
+      console.error('Failed to save data to storage:', error);
+      // Try to save with minimal data if storage limit is an issue
       try {
-        // Check if database is initialized before saving
-        if (!this.db) {
-          console.error('Attempted to save before database was initialized');
-          reject(new Error('Database not initialized'));
-          return;
-        }
-        
-        const dataToSave = JSON.stringify(this.db);
-        localStorage.setItem(this.storageKey, dataToSave);
-        console.log('Data saved to storage successfully');
-        resolve();
-      } catch (error) {
-        console.error('Failed to save data to storage:', error);
-        // Try to save with minimal data if storage limit is an issue
-        try {
-          const minimalData = { 
-            machines: this.db.machines, 
-            parts: this.db.parts,
-            consumables: this.db.consumables,
-            rawMaterials: this.db.rawMaterials,
-            calendar: this.db.calendar
-          };
-          localStorage.setItem(this.storageKey, JSON.stringify(minimalData));
-          console.log('Saved minimal data to storage');
-          resolve();
-        } catch (fallbackError) {
-          console.error('Critical error: Could not save even minimal data', fallbackError);
-          reject(fallbackError);
-        }
+        const minimalData = { 
+          machines: this.db.machines, 
+          parts: this.db.parts,
+          consumables: this.db.consumables,
+          rawMaterials: this.db.rawMaterials,
+          calendar: this.db.calendar
+        };
+        await this.storageService.saveToStorage(minimalData);
+        console.log('Saved minimal data to storage');
+      } catch (fallbackError) {
+        console.error('Critical error: Could not save even minimal data', fallbackError);
+        throw fallbackError;
       }
-    });
+    }
   }
 
-  // Units methods
+  // Unit methods
   async getUnits(): Promise<Unit[]> {
     if (!this.initialized) await this.initialize();
-    return this.db.units || [];
+    return this.unitService.getUnits();
   }
 
   async saveUnit(unit: Unit): Promise<Unit> {
     if (!this.initialized) await this.initialize();
-    
-    const existingIndex = this.db.units.findIndex((u: Unit) => u.id === unit.id);
-    if (existingIndex >= 0) {
-      this.db.units[existingIndex] = unit;
-    } else {
-      if (!unit.id) {
-        unit.id = generateId();
-      }
-      this.db.units.push(unit);
-    }
-    
+    const savedUnit = this.unitService.saveUnit(unit);
     await this.saveToStorage();
-    return unit;
+    return savedUnit;
   }
 
   async deleteUnit(id: string): Promise<void> {
     if (!this.initialized) await this.initialize();
-    this.db.units = this.db.units.filter((u: Unit) => u.id !== id);
+    this.unitService.deleteUnit(id);
     await this.saveToStorage();
   }
 
   // Machine methods
   async getMachines(): Promise<Machine[]> {
     if (!this.initialized) await this.initialize();
-    return this.db.machines || [];
+    return this.machineService.getMachines();
   }
 
   async saveMachine(machine: Machine): Promise<Machine> {
     if (!this.initialized) await this.initialize();
-    
-    const existingIndex = this.db.machines.findIndex((m: Machine) => m.id === machine.id);
-    if (existingIndex >= 0) {
-      this.db.machines[existingIndex] = machine;
-    } else {
-      if (!machine.id) {
-        machine.id = generateId();
-      }
-      this.db.machines.push(machine);
-    }
-    
+    const savedMachine = this.machineService.saveMachine(machine);
     await this.saveToStorage();
-    return machine;
+    return savedMachine;
   }
 
   async deleteMachine(id: string): Promise<void> {
     if (!this.initialized) await this.initialize();
-    this.db.machines = this.db.machines.filter((m: Machine) => m.id !== id);
+    this.machineService.deleteMachine(id);
     await this.saveToStorage();
   }
 
   // Part methods
   async getParts(): Promise<Part[]> {
     if (!this.initialized) await this.initialize();
-    return this.db.parts || [];
+    return this.partService.getParts();
   }
 
   async savePart(part: Part): Promise<Part> {
     if (!this.initialized) await this.initialize();
-    
-    const existingIndex = this.db.parts.findIndex((p: Part) => p.id === part.id);
-    if (existingIndex >= 0) {
-      this.db.parts[existingIndex] = part;
-    } else {
-      if (!part.id) {
-        part.id = generateId();
-      }
-      this.db.parts.push(part);
-    }
-    
+    const savedPart = this.partService.savePart(part);
     await this.saveToStorage();
-    return part;
+    return savedPart;
   }
 
   async deletePart(id: string): Promise<void> {
     if (!this.initialized) await this.initialize();
-    this.db.parts = this.db.parts.filter((p: Part) => p.id !== id);
+    this.partService.deletePart(id);
     await this.saveToStorage();
   }
 
   // Consumable methods
   async getConsumables(): Promise<Consumable[]> {
     if (!this.initialized) await this.initialize();
-    return this.db.consumables || [];
+    return this.consumableService.getConsumables();
   }
 
   async saveConsumable(consumable: Consumable): Promise<Consumable> {
     if (!this.initialized) await this.initialize();
-    
-    const existingIndex = this.db.consumables.findIndex((c: Consumable) => c.id === consumable.id);
-    if (existingIndex >= 0) {
-      this.db.consumables[existingIndex] = consumable;
-    } else {
-      if (!consumable.id) {
-        consumable.id = generateId();
-      }
-      this.db.consumables.push(consumable);
-    }
-    
+    const savedConsumable = this.consumableService.saveConsumable(consumable);
     await this.saveToStorage();
-    return consumable;
+    return savedConsumable;
   }
 
   async deleteConsumable(id: string): Promise<void> {
     if (!this.initialized) await this.initialize();
-    this.db.consumables = this.db.consumables.filter((c: Consumable) => c.id !== id);
+    this.consumableService.deleteConsumable(id);
     await this.saveToStorage();
   }
 
   // Raw Material methods
   async getRawMaterials(): Promise<RawMaterial[]> {
     if (!this.initialized) await this.initialize();
-    return this.db.rawMaterials || [];
+    return this.rawMaterialService.getRawMaterials();
   }
 
   async saveRawMaterial(material: RawMaterial): Promise<RawMaterial> {
     if (!this.initialized) await this.initialize();
-    
-    const existingIndex = this.db.rawMaterials.findIndex((m: RawMaterial) => m.id === material.id);
-    if (existingIndex >= 0) {
-      this.db.rawMaterials[existingIndex] = material;
-    } else {
-      if (!material.id) {
-        material.id = generateId();
-      }
-      this.db.rawMaterials.push(material);
-    }
-    
+    const savedMaterial = this.rawMaterialService.saveRawMaterial(material);
     await this.saveToStorage();
-    return material;
+    return savedMaterial;
   }
 
   async deleteRawMaterial(id: string): Promise<void> {
     if (!this.initialized) await this.initialize();
-    this.db.rawMaterials = this.db.rawMaterials.filter((m: RawMaterial) => m.id !== id);
+    this.rawMaterialService.deleteRawMaterial(id);
     await this.saveToStorage();
   }
 
   // Part Consumable methods
   async getPartConsumables(): Promise<PartConsumable[]> {
     if (!this.initialized) await this.initialize();
-    return this.db.partConsumables || [];
+    return this.partConsumableService.getPartConsumables();
   }
 
   async savePartConsumable(partConsumable: PartConsumable): Promise<PartConsumable> {
     if (!this.initialized) await this.initialize();
-    
-    const existingIndex = this.db.partConsumables.findIndex(
-      (pc: PartConsumable) => pc.partId === partConsumable.partId && pc.consumableId === partConsumable.consumableId
-    );
-    
-    if (existingIndex >= 0) {
-      this.db.partConsumables[existingIndex] = partConsumable;
-    } else {
-      if (!partConsumable.id) {
-        partConsumable.id = generateId();
-      }
-      this.db.partConsumables.push(partConsumable);
-    }
-    
+    const savedPartConsumable = this.partConsumableService.savePartConsumable(partConsumable);
     await this.saveToStorage();
-    return partConsumable;
+    return savedPartConsumable;
   }
 
   async deletePartConsumable(partId: string, consumableId: string): Promise<void> {
     if (!this.initialized) await this.initialize();
-    this.db.partConsumables = this.db.partConsumables.filter(
-      (pc: PartConsumable) => !(pc.partId === partId && pc.consumableId === consumableId)
-    );
+    this.partConsumableService.deletePartConsumable(partId, consumableId);
     await this.saveToStorage();
   }
 
   // Part Raw Material methods
   async getPartRawMaterials(): Promise<PartRawMaterial[]> {
     if (!this.initialized) await this.initialize();
-    return this.db.partRawMaterials || [];
+    return this.partRawMaterialService.getPartRawMaterials();
   }
 
   async savePartRawMaterial(partRawMaterial: PartRawMaterial): Promise<PartRawMaterial> {
     if (!this.initialized) await this.initialize();
-    
-    const existingIndex = this.db.partRawMaterials.findIndex(
-      (prm: PartRawMaterial) => prm.partId === partRawMaterial.partId && prm.rawMaterialId === partRawMaterial.rawMaterialId
-    );
-    
-    if (existingIndex >= 0) {
-      this.db.partRawMaterials[existingIndex] = partRawMaterial;
-    } else {
-      if (!partRawMaterial.id) {
-        partRawMaterial.id = generateId();
-      }
-      this.db.partRawMaterials.push(partRawMaterial);
-    }
-    
+    const savedPartRawMaterial = this.partRawMaterialService.savePartRawMaterial(partRawMaterial);
     await this.saveToStorage();
-    return partRawMaterial;
+    return savedPartRawMaterial;
   }
 
   async deletePartRawMaterial(partId: string, rawMaterialId: string): Promise<void> {
     if (!this.initialized) await this.initialize();
-    this.db.partRawMaterials = this.db.partRawMaterials.filter(
-      (prm: PartRawMaterial) => !(prm.partId === partId && prm.rawMaterialId === rawMaterialId)
-    );
+    this.partRawMaterialService.deletePartRawMaterial(partId, rawMaterialId);
     await this.saveToStorage();
   }
 
   // Calendar methods
   async getCalendarState(): Promise<CalendarState | null> {
     if (!this.initialized) await this.initialize();
-    
-    // Deep clone the calendar data to prevent reference issues
-    if (this.db.calendar) {
-      console.log("Getting calendar state, current data:", this.db.calendar);
-      return JSON.parse(JSON.stringify(this.db.calendar));
-    }
-    return this.db.calendar;
+    return this.calendarService.getCalendarState();
   }
 
   async setCalendarState(calendarState: CalendarState): Promise<void> {
     if (!this.initialized) await this.initialize();
     
-    // Ensure all calendar properties have the correct structure
-    if (!calendarState.shiftTimes) calendarState.shiftTimes = [];
-    if (!calendarState.dayShiftToggles) calendarState.dayShiftToggles = [];
-    if (!calendarState.holidays) calendarState.holidays = [];
-    if (!calendarState.viewDate) calendarState.viewDate = new Date().toISOString().split('T')[0];
-    
-    // Make a deep clone of the calendar state to prevent reference issues
-    this.db.calendar = JSON.parse(JSON.stringify(calendarState));
-    console.log("Saving calendar state:", this.db.calendar);
+    this.calendarService.setCalendarState(calendarState);
     
     try {
       await this.saveToStorage();

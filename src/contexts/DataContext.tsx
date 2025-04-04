@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+
+import React, { createContext, useContext } from 'react';
 import { 
   Machine, 
   Part, 
@@ -12,7 +13,14 @@ import {
   CalendarState
 } from '@/types/all';
 import { LoadingScreen } from '@/components/ui/loading-spinner';
-import SqlDatabaseService from '@/services/db/SqlDatabaseService';
+
+// Import custom hooks
+import { useDataInitialization } from '@/hooks/useDataInitialization';
+import { useCategoriesAndUnits } from '@/hooks/useCategoriesAndUnits';
+import { useMachineOperations } from '@/hooks/useMachineOperations';
+import { usePartOperations } from '@/hooks/usePartOperations';
+import { useInventoryOperations } from '@/hooks/useInventoryOperations';
+import { useCalendarOperations } from '@/hooks/useCalendarOperations';
 
 interface DataContextType {
   isLoading: boolean;
@@ -135,506 +143,72 @@ const DataContext = createContext<DataContextType>({
 });
 
 export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [isLoading, setIsLoading] = useState(true);
-  const [machines, setMachines] = useState<Machine[]>([]);
-  const [parts, setParts] = useState<Part[]>([]);
-  const [consumables, setConsumables] = useState<Consumable[]>([]);
-  const [rawMaterials, setRawMaterials] = useState<RawMaterial[]>([]);
-  const [partConsumables, setPartConsumables] = useState<PartConsumable[]>([]);
-  const [partRawMaterials, setPartRawMaterials] = useState<PartRawMaterial[]>([]);
-  const [calendarState, setCalendarState] = useState<CalendarState | null>(null);
+  // Initialize data from database
+  const {
+    isLoading,
+    machines,
+    setMachines,
+    parts,
+    setParts,
+    consumables,
+    setConsumables,
+    rawMaterials,
+    setRawMaterials,
+    partConsumables,
+    setPartConsumables,
+    partRawMaterials,
+    setPartRawMaterials,
+    calendarState,
+    setCalendarState
+  } = useDataInitialization();
   
-  const [units, setUnitsState] = useState<string[]>(["pcs", "kg", "l", "m"]);
-  const [machineCategories, setMachineCategoriesState] = useState<string[]>(["Uncategorized", "CNC", "Assembly", "Packaging"]);
-  const [partCategories, setPartCategoriesState] = useState<string[]>(["Uncategorized", "Electronic", "Mechanical", "Plastic"]);
+  // Initialize categories and units
+  const {
+    units,
+    setUnits,
+    machineCategories,
+    setMachineCategories,
+    partCategories,
+    setPartCategories
+  } = useCategoriesAndUnits();
   
-  const setUnits = (newUnits: string[]) => {
-    setUnitsState(newUnits);
-    localStorage.setItem('factory-planner-units', JSON.stringify(newUnits));
-  };
+  // Machine operations
+  const { addMachine, updateMachine, removeMachine } = useMachineOperations(machines, setMachines);
   
-  const setMachineCategories = (newCategories: string[]) => {
-    setMachineCategoriesState(newCategories);
-    localStorage.setItem('factory-planner-machine-categories', JSON.stringify(newCategories));
-  };
+  // Part operations
+  const {
+    addPart,
+    updatePart,
+    removePart,
+    addPartConsumable,
+    removePartConsumable,
+    updatePartConsumable,
+    addPartRawMaterial,
+    removePartRawMaterial,
+    updatePartRawMaterial
+  } = usePartOperations(parts, setParts);
   
-  const setPartCategories = (newCategories: string[]) => {
-    setPartCategoriesState(newCategories);
-    localStorage.setItem('factory-planner-part-categories', JSON.stringify(newCategories));
-  };
+  // Inventory operations
+  const {
+    addConsumable,
+    updateConsumable,
+    removeConsumable,
+    addRawMaterial,
+    updateRawMaterial,
+    removeRawMaterial
+  } = useInventoryOperations(consumables, setConsumables, rawMaterials, setRawMaterials);
   
-  useEffect(() => {
-    const initializeData = async () => {
-      try {
-        await SqlDatabaseService.initialize();
-        
-        const loadedMachines = await SqlDatabaseService.getMachines();
-        const loadedParts = await SqlDatabaseService.getParts();
-        const loadedConsumables = await SqlDatabaseService.getConsumables();
-        const loadedRawMaterials = await SqlDatabaseService.getRawMaterials();
-        const loadedCalendarState = await SqlDatabaseService.getCalendarState();
-        
-        setMachines(loadedMachines || []);
-        setParts(loadedParts || []);
-        setConsumables(loadedConsumables || []);
-        setRawMaterials(loadedRawMaterials || []);
-        
-        try {
-          const savedUnits = localStorage.getItem('factory-planner-units');
-          const savedMachineCategories = localStorage.getItem('factory-planner-machine-categories');
-          const savedPartCategories = localStorage.getItem('factory-planner-part-categories');
-          
-          if (savedUnits) {
-            setUnitsState(JSON.parse(savedUnits));
-          }
-          
-          if (savedMachineCategories) {
-            setMachineCategoriesState(JSON.parse(savedMachineCategories));
-          }
-          
-          if (savedPartCategories) {
-            setPartCategoriesState(JSON.parse(savedPartCategories));
-          }
-        } catch (storageError) {
-          console.error('Error loading categories from localStorage:', storageError);
-        }
-        
-        if (!loadedCalendarState) {
-          const initialCalendarState: CalendarState = {
-            shiftTimes: [
-              {
-                id: '1',
-                name: 'Morning',
-                startTime: '06:00',
-                endTime: '14:00',
-                color: 'blue'
-              },
-              {
-                id: '2',
-                name: 'Afternoon',
-                startTime: '14:00',
-                endTime: '22:00',
-                color: 'green'
-              },
-              {
-                id: '3',
-                name: 'Night',
-                startTime: '22:00',
-                endTime: '06:00',
-                color: 'purple'
-              }
-            ],
-            dayShiftToggles: [],
-            holidays: [],
-            viewDate: new Date().toISOString().split('T')[0]
-          };
-          
-          await SqlDatabaseService.setCalendarState(initialCalendarState);
-          setCalendarState(initialCalendarState);
-        } else {
-          setCalendarState(loadedCalendarState);
-        }
-        
-        setIsLoading(false);
-      } catch (error) {
-        console.error('Error initializing data:', error);
-        setIsLoading(false);
-      }
-    };
-    
-    initializeData();
-  }, []);
+  // Calendar operations
+  const {
+    addHoliday,
+    removeHoliday,
+    addShiftTime,
+    updateShiftTime,
+    removeShiftTime,
+    toggleShift,
+    setViewDate
+  } = useCalendarOperations(calendarState, setCalendarState);
   
-  const addMachine = async (machine: Machine) => {
-    try {
-      await SqlDatabaseService.saveMachine(machine);
-      setMachines(prevMachines => [...prevMachines, machine]);
-    } catch (error) {
-      console.error('Error adding machine:', error);
-    }
-  };
-
-  const updateMachine = async (id: string, machine: Machine) => {
-    try {
-      await SqlDatabaseService.saveMachine(machine);
-      setMachines(prevMachines =>
-        prevMachines.map(m => (m.id === id ? machine : m))
-      );
-    } catch (error) {
-      console.error('Error updating machine:', error);
-    }
-  };
-
-  const removeMachine = async (id: string) => {
-    try {
-      await SqlDatabaseService.deleteMachine(id);
-      setMachines(prevMachines => prevMachines.filter(m => m.id !== id));
-    } catch (error) {
-      console.error('Error removing machine:', error);
-    }
-  };
-  
-  const addPart = async (part: Part) => {
-    try {
-      await SqlDatabaseService.savePart(part);
-      setParts(prevParts => [...prevParts, part]);
-    } catch (error) {
-      console.error('Error adding part:', error);
-    }
-  };
-
-  const updatePart = async (id: string, part: Part) => {
-    try {
-      await SqlDatabaseService.savePart(part);
-      setParts(prevParts =>
-        prevParts.map(p => (p.id === id ? part : p))
-      );
-    } catch (error) {
-      console.error('Error updating part:', error);
-    }
-  };
-
-  const removePart = async (id: string) => {
-    try {
-      await SqlDatabaseService.deletePart(id);
-      setParts(prevParts => prevParts.filter(p => p.id !== id));
-    } catch (error) {
-      console.error('Error removing part:', error);
-    }
-  };
-  
-  const addConsumable = async (consumable: Consumable) => {
-    try {
-      await SqlDatabaseService.saveConsumable(consumable);
-      setConsumables(prevConsumables => [...prevConsumables, consumable]);
-    } catch (error) {
-      console.error('Error adding consumable:', error);
-    }
-  };
-
-  const updateConsumable = async (id: string, consumable: Consumable) => {
-    try {
-      await SqlDatabaseService.saveConsumable(consumable);
-      setConsumables(prevConsumables =>
-        prevConsumables.map(c => (c.id === id ? consumable : c))
-      );
-    } catch (error) {
-      console.error('Error updating consumable:', error);
-    }
-  };
-
-  const removeConsumable = async (id: string) => {
-    try {
-      await SqlDatabaseService.deleteConsumable(id);
-      setConsumables(prevConsumables => prevConsumables.filter(c => c.id !== id));
-    } catch (error) {
-      console.error('Error removing consumable:', error);
-    }
-  };
-  
-  const addRawMaterial = async (rawMaterial: RawMaterial) => {
-    try {
-      await SqlDatabaseService.saveRawMaterial(rawMaterial);
-      setRawMaterials(prevRawMaterials => [...prevRawMaterials, rawMaterial]);
-    } catch (error) {
-      console.error('Error adding raw material:', error);
-    }
-  };
-
-  const updateRawMaterial = async (id: string, rawMaterial: RawMaterial) => {
-    try {
-      await SqlDatabaseService.saveRawMaterial(rawMaterial);
-      setRawMaterials(prevRawMaterials =>
-        prevRawMaterials.map(rm => (rm.id === id ? rawMaterial : rm))
-      );
-    } catch (error) {
-      console.error('Error updating raw material:', error);
-    }
-  };
-
-  const removeRawMaterial = async (id: string) => {
-    try {
-      await SqlDatabaseService.deleteRawMaterial(id);
-      setRawMaterials(prevRawMaterials => prevRawMaterials.filter(rm => rm.id !== id));
-    } catch (error) {
-      console.error('Error removing raw material:', error);
-    }
-  };
-  
-  const addPartConsumable = async (relationship: PartConsumable) => {
-    try {
-      const part = parts.find(p => p.id === relationship.partId);
-      if (part) {
-        const updatedPart = {
-          ...part,
-          consumables: [
-            ...part.consumables,
-            {
-              consumableId: relationship.consumableId,
-              amount: relationship.amount
-            }
-          ]
-        };
-        await SqlDatabaseService.savePart(updatedPart);
-        setParts(prev => prev.map(p => p.id === part.id ? updatedPart : p));
-      }
-    } catch (error) {
-      console.error('Error adding part consumable:', error);
-    }
-  };
-
-  const removePartConsumable = async (partId: string, consumableId: string) => {
-    try {
-      const part = parts.find(p => p.id === partId);
-      if (part) {
-        const updatedPart = {
-          ...part,
-          consumables: part.consumables.filter(c => c.consumableId !== consumableId)
-        };
-        await SqlDatabaseService.savePart(updatedPart);
-        setParts(prev => prev.map(p => p.id === partId ? updatedPart : p));
-      }
-    } catch (error) {
-      console.error('Error removing part consumable:', error);
-    }
-  };
-
-  const updatePartConsumable = async (partId: string, consumableId: string, amount: number) => {
-    try {
-      const part = parts.find(p => p.id === partId);
-      if (part) {
-        const updatedPart = {
-          ...part,
-          consumables: part.consumables.map(c => {
-            if (c.consumableId === consumableId) {
-              return { ...c, amount };
-            }
-            return c;
-          })
-        };
-        await SqlDatabaseService.savePart(updatedPart);
-        setParts(prev => prev.map(p => p.id === partId ? updatedPart : p));
-      }
-    } catch (error) {
-      console.error('Error updating part consumable:', error);
-    }
-  };
-
-  const addPartRawMaterial = async (relationship: PartRawMaterial) => {
-    try {
-      const part = parts.find(p => p.id === relationship.partId);
-      if (part) {
-        const updatedPart = {
-          ...part,
-          rawMaterials: [
-            ...part.rawMaterials,
-            {
-              rawMaterialId: relationship.rawMaterialId,
-              amount: relationship.amount
-            }
-          ]
-        };
-        await SqlDatabaseService.savePart(updatedPart);
-        setParts(prev => prev.map(p => p.id === part.id ? updatedPart : p));
-      }
-    } catch (error) {
-      console.error('Error adding part raw material:', error);
-    }
-  };
-
-  const removePartRawMaterial = async (partId: string, rawMaterialId: string) => {
-    try {
-      const part = parts.find(p => p.id === partId);
-      if (part) {
-        const updatedPart = {
-          ...part,
-          rawMaterials: part.rawMaterials.filter(r => r.rawMaterialId !== rawMaterialId)
-        };
-        await SqlDatabaseService.savePart(updatedPart);
-        setParts(prev => prev.map(p => p.id === partId ? updatedPart : p));
-      }
-    } catch (error) {
-      console.error('Error removing part raw material:', error);
-    }
-  };
-
-  const updatePartRawMaterial = async (partId: string, rawMaterialId: string, amount: number) => {
-    try {
-      const part = parts.find(p => p.id === partId);
-      if (part) {
-        const updatedPart = {
-          ...part,
-          rawMaterials: part.rawMaterials.map(r => {
-            if (r.rawMaterialId === rawMaterialId) {
-              return { ...r, amount };
-            }
-            return r;
-          })
-        };
-        await SqlDatabaseService.savePart(updatedPart);
-        setParts(prev => prev.map(p => p.id === partId ? updatedPart : p));
-      }
-    } catch (error) {
-      console.error('Error updating part raw material:', error);
-    }
-  };
-
-  const addHoliday = async (holiday: Holiday) => {
-    try {
-      if (calendarState) {
-        const updatedCalendarState = {
-          ...calendarState,
-          holidays: [...calendarState.holidays, holiday]
-        };
-        
-        await SqlDatabaseService.setCalendarState(updatedCalendarState);
-        setCalendarState(updatedCalendarState);
-        console.log('Holiday added successfully:', holiday);
-      }
-    } catch (error) {
-      console.error('Error adding holiday:', error);
-      throw error;
-    }
-  };
-
-  const removeHoliday = async (id: string) => {
-    try {
-      if (calendarState) {
-        const updatedCalendarState = {
-          ...calendarState,
-          holidays: calendarState.holidays.filter(holiday => holiday.id !== id)
-        };
-        
-        await SqlDatabaseService.setCalendarState(updatedCalendarState);
-        setCalendarState(updatedCalendarState);
-        console.log('Holiday removed successfully:', id);
-      }
-    } catch (error) {
-      console.error('Error removing holiday:', error);
-      throw error;
-    }
-  };
-
-  const addShiftTime = async (shiftTime: ShiftTime) => {
-    try {
-      if (calendarState) {
-        const updatedCalendarState = {
-          ...calendarState,
-          shiftTimes: [...calendarState.shiftTimes, shiftTime]
-        };
-        
-        await SqlDatabaseService.setCalendarState(updatedCalendarState);
-        setCalendarState(updatedCalendarState);
-        console.log('Shift time added successfully:', shiftTime);
-      }
-    } catch (error) {
-      console.error('Error adding shift time:', error);
-      throw error;
-    }
-  };
-
-  const updateShiftTime = async (shiftTime: ShiftTime) => {
-    try {
-      if (calendarState) {
-        const updatedCalendarState = {
-          ...calendarState,
-          shiftTimes: calendarState.shiftTimes.map(shift => 
-            shift.id === shiftTime.id ? shiftTime : shift
-          )
-        };
-        
-        console.log("Updating shift time:", shiftTime);
-        console.log("Updated calendar state:", updatedCalendarState);
-        
-        await SqlDatabaseService.setCalendarState(updatedCalendarState);
-        setCalendarState(updatedCalendarState);
-      }
-    } catch (error) {
-      console.error('Error updating shift time:', error);
-      throw error;
-    }
-  };
-
-  const removeShiftTime = async (id: string) => {
-    try {
-      if (calendarState) {
-        const updatedCalendarState = {
-          ...calendarState,
-          shiftTimes: calendarState.shiftTimes.filter(shift => shift.id !== id),
-          dayShiftToggles: calendarState.dayShiftToggles.filter(toggle => toggle.shiftTimeId !== id)
-        };
-        
-        await SqlDatabaseService.setCalendarState(updatedCalendarState);
-        setCalendarState(updatedCalendarState);
-        console.log('Shift time removed successfully:', id);
-      }
-    } catch (error) {
-      console.error('Error removing shift time:', error);
-      throw error;
-    }
-  };
-
-  const toggleShift = async (date: string, shiftTimeId: string) => {
-    try {
-      if (calendarState) {
-        const existingToggle = calendarState.dayShiftToggles.find(
-          toggle => toggle.date === date && toggle.shiftTimeId === shiftTimeId
-        );
-
-        let updatedToggles;
-        
-        if (existingToggle) {
-          updatedToggles = calendarState.dayShiftToggles.map(toggle => {
-            if (toggle.date === date && toggle.shiftTimeId === shiftTimeId) {
-              return { ...toggle, isActive: !toggle.isActive };
-            }
-            return toggle;
-          });
-        } else {
-          updatedToggles = [
-            ...calendarState.dayShiftToggles,
-            {
-              id: `${date}-${shiftTimeId}`,
-              date,
-              shiftTimeId,
-              isActive: true
-            }
-          ];
-        }
-        
-        const updatedCalendarState = {
-          ...calendarState,
-          dayShiftToggles: updatedToggles
-        };
-        
-        await SqlDatabaseService.setCalendarState(updatedCalendarState);
-        setCalendarState(updatedCalendarState);
-        console.log('Shift toggled successfully:', date, shiftTimeId);
-      }
-    } catch (error) {
-      console.error('Error toggling shift:', error);
-      throw error;
-    }
-  };
-
-  const setViewDate = async (date: string) => {
-    try {
-      if (calendarState) {
-        const updatedCalendarState = {
-          ...calendarState,
-          viewDate: date
-        };
-        
-        await SqlDatabaseService.setCalendarState(updatedCalendarState);
-        setCalendarState(updatedCalendarState);
-        console.log('View date updated successfully:', date);
-      }
-    } catch (error) {
-      console.error('Error setting view date:', error);
-      throw error;
-    }
-  };
-
   const contextValue: DataContextType = {
     isLoading,
     machines,
