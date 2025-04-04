@@ -111,7 +111,7 @@ const Machines = () => {
           >
             Manage Categories
           </Button>
-          <Button onClick={handleAddMachine}>
+          <Button onClick={() => handleAddMachine()}>
             <Plus className="h-4 w-4 mr-2" />
             Add Machine
           </Button>
@@ -129,7 +129,7 @@ const Machines = () => {
             </CardDescription>
           </CardHeader>
           <CardFooter>
-            <Button onClick={handleAddMachine}>
+            <Button onClick={() => handleAddMachine()}>
               <Plus className="h-4 w-4 mr-2" />
               Add Machine
             </Button>

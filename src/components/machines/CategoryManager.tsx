@@ -11,14 +11,15 @@ import {
   DialogContent, 
   DialogHeader, 
   DialogTitle,
-  DialogFooter
+  DialogFooter,
+  DialogDescription
 } from '@/components/ui/dialog';
 
 // Default category that cannot be deleted
 export const DEFAULT_CATEGORY = 'Uncategorized';
 
 interface CategoryManagerProps {
-  onCategoryChange: (categories: string[]) => void;
+  onCategoryChange?: (categories: string[]) => void;
   machines: any[]; // Machine type
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
@@ -31,7 +32,7 @@ const CategoryManager = ({
   onOpenChange 
 }: CategoryManagerProps) => {
   // We still keep the prop-based function to maintain backward compatibility
-  const { machineCategories } = useData();
+  const { machineCategories, setMachineCategories: contextSetMachineCategories } = useData();
   
   const [newCategory, setNewCategory] = useState('');
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
@@ -49,7 +50,14 @@ const CategoryManager = ({
     }
     
     const updatedCategories = [...machineCategories, newCategory];
-    onCategoryChange(updatedCategories);
+    
+    // Use the prop function if provided, otherwise use the context function
+    if (onCategoryChange) {
+      onCategoryChange(updatedCategories);
+    } else {
+      contextSetMachineCategories(updatedCategories);
+    }
+    
     setNewCategory('');
     toast.success('Category added successfully');
   };
@@ -81,7 +89,14 @@ const CategoryManager = ({
     
     const updatedCategories = [...machineCategories];
     updatedCategories[index] = editValue;
-    onCategoryChange(updatedCategories);
+    
+    // Use the prop function if provided, otherwise use the context function
+    if (onCategoryChange) {
+      onCategoryChange(updatedCategories);
+    } else {
+      contextSetMachineCategories(updatedCategories);
+    }
+    
     setEditingIndex(null);
     setEditValue('');
     toast.success('Category updated successfully');
@@ -95,7 +110,13 @@ const CategoryManager = ({
     
     const categoryToDelete = machineCategories[index];
     const updatedCategories = machineCategories.filter((_, i) => i !== index);
-    onCategoryChange(updatedCategories);
+    
+    // Use the prop function if provided, otherwise use the context function
+    if (onCategoryChange) {
+      onCategoryChange(updatedCategories);
+    } else {
+      contextSetMachineCategories(updatedCategories);
+    }
     
     // Check if any machines use this category and revert them to default
     const machinesUsingCategory = machines.filter(
@@ -184,6 +205,9 @@ const CategoryManager = ({
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Machine Categories</DialogTitle>
+            <DialogDescription>
+              Manage and organize machine categories. The default category cannot be modified.
+            </DialogDescription>
           </DialogHeader>
           {categoryManagerContent}
           <DialogFooter className="sm:justify-start">

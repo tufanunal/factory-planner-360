@@ -1,6 +1,7 @@
 
 import { Machine } from '@/types/machine';
 import { generateId } from '@/utils/idGenerator';
+import { DEFAULT_CATEGORY } from '@/components/machines/CategoryManager';
 
 export class MachineService {
   private db: any;
@@ -14,7 +15,17 @@ export class MachineService {
   }
   
   saveMachine(machine: Machine): Machine {
+    if (!this.db.machines) {
+      this.db.machines = [];
+    }
+    
     const existingIndex = this.db.machines.findIndex((m: Machine) => m.id === machine.id);
+    
+    // Ensure machine has a category, defaulting to DEFAULT_CATEGORY if not specified
+    if (!machine.category) {
+      machine.category = DEFAULT_CATEGORY;
+    }
+    
     if (existingIndex >= 0) {
       this.db.machines[existingIndex] = machine;
     } else {
@@ -28,6 +39,8 @@ export class MachineService {
   }
   
   deleteMachine(id: string): void {
-    this.db.machines = this.db.machines.filter((m: Machine) => m.id !== id);
+    if (this.db.machines) {
+      this.db.machines = this.db.machines.filter((m: Machine) => m.id !== id);
+    }
   }
 }
