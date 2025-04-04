@@ -160,7 +160,7 @@ const Machines = () => {
         open={isCategoryManagerOpen}
         onOpenChange={setIsCategoryManagerOpen}
         onCategoryChange={setMachineCategories}
-        categories={machineCategories}
+        machines={machines}
       />
       
       <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
