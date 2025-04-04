@@ -12,6 +12,11 @@ export const MachineStats = ({ machines }: MachineStatsProps) => {
   const maintenanceMachines = machines.filter(m => m.status === 'Maintenance').length;
   const offlineMachines = machines.filter(m => m.status === 'Offline').length;
   
+  // Calculate the average availability percentage
+  const averageAvailability = totalMachines > 0
+    ? Math.round(machines.reduce((sum, machine) => sum + (machine.availability || 0), 0) / totalMachines)
+    : 0;
+  
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
       <Card className="animate-fade-in">
@@ -89,7 +94,7 @@ export const MachineStats = ({ machines }: MachineStatsProps) => {
       </Card>
       <Card className="animate-fade-in delay-300">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Offline</CardTitle>
+          <CardTitle className="text-sm font-medium">Average Availability</CardTitle>
           <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 24 24"
@@ -100,15 +105,18 @@ export const MachineStats = ({ machines }: MachineStatsProps) => {
             strokeWidth="2"
             className="h-4 w-4 text-muted-foreground"
           >
-            <path d="M12 5v14" />
-            <path d="m5 12 7 7 7-7" />
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+            <line x1="3" y1="9" x2="21" y2="9"></line>
+            <line x1="3" y1="15" x2="21" y2="15"></line>
+            <line x1="9" y1="3" x2="9" y2="21"></line>
+            <line x1="15" y1="3" x2="15" y2="21"></line>
           </svg>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-red-600">{offlineMachines}</div>
+          <div className="text-2xl font-bold text-blue-600">{averageAvailability}%</div>
           <p className="text-xs text-muted-foreground">
             {totalMachines > 0 
-              ? `${Math.round(offlineMachines / totalMachines * 100)}% of total`
+              ? `Based on ${totalMachines} machines`
               : 'No machines'}
           </p>
         </CardContent>
