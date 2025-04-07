@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import {
   Dialog,
@@ -7,16 +8,17 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { FilterableSelect, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Part } from '@/types/part';
 import { toast } from 'sonner';
 import { useData } from '@/contexts/DataContext';
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { X, Plus, Package, Layers, Box } from 'lucide-react';
+import { Box, Package, Layers } from 'lucide-react';
+
+// Import the tab components
+import DetailTab from './edit-modal/DetailTab';
+import ConsumablesTab from './edit-modal/ConsumablesTab';
+import RawMaterialsTab from './edit-modal/RawMaterialsTab';
 
 interface PartEditModalProps {
   part: Part | null;
@@ -48,10 +50,6 @@ const PartEditModal = ({
       rawMaterials: []
     }
   );
-  const [consumableId, setConsumableId] = useState<string>("");
-  const [consumableAmount, setConsumableAmount] = useState<number>(0);
-  const [rawMaterialId, setRawMaterialId] = useState<string>("");
-  const [rawMaterialAmount, setRawMaterialAmount] = useState<number>(0);
   const [activeTab, setActiveTab] = useState("details");
 
   useEffect(() => {
@@ -73,85 +71,6 @@ const PartEditModal = ({
     }
     setActiveTab("details");
   }, [part, categories]);
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setEditedPart(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const handleSelectChange = (name: string, value: string) => {
-    setEditedPart(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const handleAddConsumable = () => {
-    const amount = Number(consumableAmount);
-    
-    if (!consumableId || isNaN(amount) || amount <= 0) {
-      toast.error("Please select a consumable and specify a valid amount");
-      return;
-    }
-
-    if (editedPart.consumables.some(c => c.consumableId === consumableId)) {
-      toast.error("This consumable is already added to the part");
-      return;
-    }
-
-    setEditedPart(prev => ({
-      ...prev,
-      consumables: [
-        ...prev.consumables,
-        { consumableId, amount }
-      ]
-    }));
-
-    setConsumableId("");
-    setConsumableAmount(0);
-  };
-
-  const handleAddRawMaterial = () => {
-    const amount = Number(rawMaterialAmount);
-    
-    if (!rawMaterialId || isNaN(amount) || amount <= 0) {
-      toast.error("Please select a raw material and specify a valid amount");
-      return;
-    }
-
-    if (editedPart.rawMaterials.some(r => r.rawMaterialId === rawMaterialId)) {
-      toast.error("This raw material is already added to the part");
-      return;
-    }
-
-    setEditedPart(prev => ({
-      ...prev,
-      rawMaterials: [
-        ...prev.rawMaterials,
-        { rawMaterialId, amount }
-      ]
-    }));
-
-    setRawMaterialId("");
-    setRawMaterialAmount(0);
-  };
-
-  const handleRemoveConsumable = (consumableId: string) => {
-    setEditedPart(prev => ({
-      ...prev,
-      consumables: prev.consumables.filter(c => c.consumableId !== consumableId)
-    }));
-  };
-
-  const handleRemoveRawMaterial = (rawMaterialId: string) => {
-    setEditedPart(prev => ({
-      ...prev,
-      rawMaterials: prev.rawMaterials.filter(r => r.rawMaterialId !== rawMaterialId)
-    }));
-  };
 
   const handleSave = () => {
     if (!editedPart.name || !editedPart.sku || !editedPart.category) {
@@ -188,227 +107,28 @@ const PartEditModal = ({
             </TabsTrigger>
           </TabsList>
           
-          <TabsContent value="details" className="space-y-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="name" className="text-right">
-                Name
-              </Label>
-              <Input
-                type="text"
-                id="name"
-                name="name"
-                value={editedPart.name}
-                onChange={handleChange}
-                className="col-span-3"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="sku" className="text-right">
-                SKU
-              </Label>
-              <Input
-                type="text"
-                id="sku"
-                name="sku"
-                value={editedPart.sku}
-                onChange={handleChange}
-                className="col-span-3"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="category" className="text-right">
-                Category
-              </Label>
-              <FilterableSelect 
-                value={editedPart.category} 
-                onValueChange={(value) => handleSelectChange('category', value)}
-                triggerClassName="col-span-3"
-              >
-                {categories.map(category => (
-                  <SelectItem key={category} value={category}>{category}</SelectItem>
-                ))}
-              </FilterableSelect>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="qualityRate" className="text-right">
-                Quality Rate
-              </Label>
-              <Input
-                type="number"
-                id="qualityRate"
-                name="qualityRate"
-                value={editedPart.qualityRate}
-                onChange={handleChange}
-                className="col-span-3"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="stock" className="text-right">
-                Stock
-              </Label>
-              <Input
-                type="number"
-                id="stock"
-                name="stock"
-                value={editedPart.stock}
-                onChange={handleChange}
-                className="col-span-3"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="status" className="text-right">
-                Status
-              </Label>
-              <Select 
-                value={editedPart.status} 
-                onValueChange={(value) => handleSelectChange('status', value)}
-              >
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Active">Active</SelectItem>
-                  <SelectItem value="Low Stock">Low Stock</SelectItem>
-                  <SelectItem value="Discontinued">Discontinued</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-4 items-start gap-4">
-              <Label htmlFor="description" className="text-right mt-2">
-                Description
-              </Label>
-              <Input
-                id="description"
-                name="description"
-                value={editedPart.description || ""}
-                onChange={handleChange}
-                className="col-span-3"
-              />
-            </div>
+          <TabsContent value="details">
+            <DetailTab 
+              part={editedPart} 
+              setPart={setEditedPart} 
+              categories={categories} 
+            />
           </TabsContent>
           
           <TabsContent value="consumables">
-            <div className="space-y-4">
-              <div className="flex gap-4 items-end">
-                <div className="flex-1">
-                  <Label htmlFor="consumable" className="mb-2 block">Consumable</Label>
-                  <FilterableSelect
-                    value={consumableId}
-                    onValueChange={setConsumableId}
-                    placeholder="Select Consumable"
-                  >
-                    {consumables.map(consumable => (
-                      <SelectItem key={consumable.id} value={consumable.id}>
-                        {consumable.name}
-                      </SelectItem>
-                    ))}
-                  </FilterableSelect>
-                </div>
-                <div className="w-24">
-                  <Label htmlFor="amount" className="mb-2 block">Amount</Label>
-                  <Input
-                    type="number"
-                    id="amount"
-                    placeholder="Amount"
-                    value={consumableAmount}
-                    onChange={(e) => setConsumableAmount(Number(e.target.value))}
-                  />
-                </div>
-                <Button onClick={handleAddConsumable} className="flex items-center gap-1">
-                  <Plus size={16} /> Add
-                </Button>
-              </div>
-
-              {editedPart.consumables.length > 0 ? (
-                <div className="divide-y border rounded-md">
-                  {editedPart.consumables.map(c => {
-                    const actualConsumable = consumables.find(cons => cons.id === c.consumableId);
-                    return actualConsumable ? (
-                      <div key={c.consumableId} className="flex items-center justify-between p-3">
-                        <div>
-                          <span className="font-medium">{actualConsumable.name}</span>
-                          <span className="ml-2 text-sm text-muted-foreground">Amount: {c.amount}</span>
-                        </div>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={() => handleRemoveConsumable(c.consumableId)}
-                          className="text-destructive hover:text-destructive"
-                        >
-                          <X size={16} />
-                        </Button>
-                      </div>
-                    ) : null;
-                  })}
-                </div>
-              ) : (
-                <div className="text-center py-8 text-muted-foreground border rounded-md">
-                  No consumables added yet
-                </div>
-              )}
-            </div>
+            <ConsumablesTab 
+              part={editedPart} 
+              setPart={setEditedPart} 
+              consumables={consumables} 
+            />
           </TabsContent>
           
           <TabsContent value="rawMaterials">
-            <div className="space-y-4">
-              <div className="flex gap-4 items-end">
-                <div className="flex-1">
-                  <Label htmlFor="rawMaterial" className="mb-2 block">Raw Material</Label>
-                  <FilterableSelect
-                    value={rawMaterialId}
-                    onValueChange={setRawMaterialId}
-                    placeholder="Select Raw Material"
-                  >
-                    {rawMaterials.map(rawMaterial => (
-                      <SelectItem key={rawMaterial.id} value={rawMaterial.id}>
-                        {rawMaterial.name}
-                      </SelectItem>
-                    ))}
-                  </FilterableSelect>
-                </div>
-                <div className="w-24">
-                  <Label htmlFor="amount" className="mb-2 block">Amount</Label>
-                  <Input
-                    type="number"
-                    id="amount"
-                    placeholder="Amount"
-                    value={rawMaterialAmount}
-                    onChange={(e) => setRawMaterialAmount(Number(e.target.value))}
-                  />
-                </div>
-                <Button onClick={handleAddRawMaterial} className="flex items-center gap-1">
-                  <Plus size={16} /> Add
-                </Button>
-              </div>
-
-              {editedPart.rawMaterials.length > 0 ? (
-                <div className="divide-y border rounded-md">
-                  {editedPart.rawMaterials.map(r => {
-                    const actualRawMaterial = rawMaterials.find(rm => rm.id === r.rawMaterialId);
-                    return actualRawMaterial ? (
-                      <div key={r.rawMaterialId} className="flex items-center justify-between p-3">
-                        <div>
-                          <span className="font-medium">{actualRawMaterial.name}</span>
-                          <span className="ml-2 text-sm text-muted-foreground">Amount: {r.amount}</span>
-                        </div>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={() => handleRemoveRawMaterial(r.rawMaterialId)}
-                          className="text-destructive hover:text-destructive"
-                        >
-                          <X size={16} />
-                        </Button>
-                      </div>
-                    ) : null;
-                  })}
-                </div>
-              ) : (
-                <div className="text-center py-8 text-muted-foreground border rounded-md">
-                  No raw materials added yet
-                </div>
-              )}
-            </div>
+            <RawMaterialsTab 
+              part={editedPart} 
+              setPart={setEditedPart} 
+              rawMaterials={rawMaterials} 
+            />
           </TabsContent>
         </Tabs>
         

@@ -14,11 +14,14 @@ import PartTable from '@/components/parts/PartTable';
 import PartPagination from '@/components/parts/PartPagination';
 import PartMetrics from '@/components/parts/PartMetrics';
 
+const ITEMS_PER_PAGE = 10;
+
 const PartsPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isCategoryManagerOpen, setIsCategoryManagerOpen] = useState(false);
   const [selectedPart, setSelectedPart] = useState<Part | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
   
   const { parts, setParts, partCategories } = useData();
   
@@ -27,6 +30,10 @@ const PartsPage = () => {
     part.sku.toLowerCase().includes(searchQuery.toLowerCase()) ||
     part.category.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // Calculate paginated parts
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedParts = filteredParts.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
   const handleOpenModal = (part: Part | null = null) => {
     setSelectedPart(part);
@@ -45,8 +52,10 @@ const PartsPage = () => {
         id: Math.random().toString(36).substring(2, 15)
       };
       setParts([...parts, newPart]);
+      toast.success("Part added successfully");
     } else {
       setParts(parts.map(p => p.id === part.id ? part : p));
+      toast.success("Part updated successfully");
     }
     handleCloseModal();
   };
@@ -54,6 +63,16 @@ const PartsPage = () => {
   const handleDeletePart = (partId: string) => {
     setParts(parts.filter(p => p.id !== partId));
     toast.success("Part removed successfully");
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  // Reset pagination when search changes
+  const handleSearchChange = (query: string) => {
+    setSearchQuery(query);
+    setCurrentPage(1); // Reset to first page on new search
   };
 
   return (
@@ -75,13 +94,13 @@ const PartsPage = () => {
           <CardContent>
             <PartFilters 
               searchQuery={searchQuery}
-              onSearchChange={setSearchQuery}
+              onSearchChange={handleSearchChange}
               onAddPart={() => handleOpenModal()}
               onOpenCategoryManager={() => setIsCategoryManagerOpen(true)}
             />
             
             <PartTable 
-              parts={filteredParts} 
+              parts={paginatedParts} 
               onEdit={handleOpenModal} 
               onDelete={handleDeletePart} 
             />
@@ -89,12 +108,15 @@ const PartsPage = () => {
             <PartPagination 
               totalCount={parts.length} 
               filteredCount={filteredParts.length} 
+              currentPage={currentPage}
+              itemsPerPage={ITEMS_PER_PAGE}
+              onPageChange={handlePageChange}
             />
           </CardContent>
         </Card>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-slide-up [animation-delay:100ms]">
-          {filteredParts.map(part => (
+          {paginatedParts.map(part => (
             <PartCard 
               key={part.id} 
               part={part} 
