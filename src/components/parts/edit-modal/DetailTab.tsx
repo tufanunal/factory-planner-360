@@ -1,5 +1,4 @@
 
-import { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { FilterableSelect, SelectItem, Select, SelectContent, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -14,17 +13,21 @@ interface DetailTabProps {
 const DetailTab = ({ part, setPart, categories }: DetailTabProps) => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setPart(prev => ({
-      ...prev,
+    // Create a new part object with the updated field
+    const updatedPart = {
+      ...part,
       [name]: value
-    }));
+    };
+    setPart(updatedPart);
   };
 
   const handleSelectChange = (name: string, value: string) => {
-    setPart(prev => ({
-      ...prev,
+    // Create a new part object with the updated field
+    const updatedPart = {
+      ...part,
       [name]: value
-    }));
+    };
+    setPart(updatedPart);
   };
 
   return (

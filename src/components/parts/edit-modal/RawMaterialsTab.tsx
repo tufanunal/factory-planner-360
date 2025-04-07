@@ -32,23 +32,31 @@ const RawMaterialsTab = ({ part, setPart, rawMaterials }: RawMaterialsTabProps) 
       return;
     }
 
-    setPart(prev => ({
-      ...prev,
+    // Create a new part object with the updated rawMaterials array
+    const updatedPart = {
+      ...part,
       rawMaterials: [
-        ...prev.rawMaterials,
+        ...part.rawMaterials,
         { rawMaterialId, amount }
       ]
-    }));
+    };
+    
+    // Update the part with the new object
+    setPart(updatedPart);
 
     setRawMaterialId("");
     setRawMaterialAmount(0);
   };
 
   const handleRemoveRawMaterial = (rawMaterialId: string) => {
-    setPart(prev => ({
-      ...prev,
-      rawMaterials: prev.rawMaterials.filter(r => r.rawMaterialId !== rawMaterialId)
-    }));
+    // Create a new part object with the filtered rawMaterials array
+    const updatedPart = {
+      ...part,
+      rawMaterials: part.rawMaterials.filter(r => r.rawMaterialId !== rawMaterialId)
+    };
+    
+    // Update the part with the new object
+    setPart(updatedPart);
   };
 
   return (

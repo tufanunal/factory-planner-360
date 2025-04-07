@@ -32,23 +32,31 @@ const ConsumablesTab = ({ part, setPart, consumables }: ConsumablesTabProps) => 
       return;
     }
 
-    setPart(prev => ({
-      ...prev,
+    // Create a new part object with the updated consumables array
+    const updatedPart = {
+      ...part,
       consumables: [
-        ...prev.consumables,
+        ...part.consumables,
         { consumableId, amount }
       ]
-    }));
+    };
+    
+    // Update the part with the new object
+    setPart(updatedPart);
 
     setConsumableId("");
     setConsumableAmount(0);
   };
 
   const handleRemoveConsumable = (consumableId: string) => {
-    setPart(prev => ({
-      ...prev,
-      consumables: prev.consumables.filter(c => c.consumableId !== consumableId)
-    }));
+    // Create a new part object with the filtered consumables array
+    const updatedPart = {
+      ...part,
+      consumables: part.consumables.filter(c => c.consumableId !== consumableId)
+    };
+    
+    // Update the part with the new object
+    setPart(updatedPart);
   };
 
   return (
