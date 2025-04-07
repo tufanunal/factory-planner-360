@@ -1,3 +1,4 @@
+
 import { 
   Settings, 
   Box, 
@@ -21,14 +22,21 @@ const Index = () => {
   useEffect(() => {
     const activePartsCount = parts.filter(part => part.status === 'Active').length;
     
-    // Calculate average availability instead of operational percentage
-    const averageAvailability = machines.length > 0 
-      ? Math.round(machines.reduce((sum, m) => sum + (m.availability || 0), 0) / machines.length) 
+    // Calculate average availability from machines with availability property
+    // Filter out machines without an availability value first
+    const machinesWithAvailability = machines.filter(m => typeof m.availability === 'number');
+    const averageAvailability = machinesWithAvailability.length > 0 
+      ? Math.round(machinesWithAvailability.reduce((sum, m) => sum + (m.availability || 0), 0) / machinesWithAvailability.length) 
       : 0;
     
     const consumablesCount = consumables.length;
     const rawMaterialsCount = rawMaterials.length;
     const shiftTimeCount = calendarState?.shiftTimes?.length || 0;
+    
+    console.log("Machines count:", machines.length);
+    console.log("Machines with availability count:", machinesWithAvailability.length);
+    console.log("Availability values:", machines.map(m => m.availability));
+    console.log("Calculated average availability:", averageAvailability);
     
     setModules([
       {

@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { DEFAULT_CATEGORY } from '@/components/machines/CategoryManager';
+import { DEFAULT_PART_CATEGORY } from '@/components/parts/PartCategoryManager';
 import SqlDatabaseService from '@/services/db/SqlDatabaseService';
 
 export function useCategoriesAndUnits() {
@@ -9,7 +10,7 @@ export function useCategoriesAndUnits() {
     DEFAULT_CATEGORY, "CNC", "Assembly", "Packaging"
   ]);
   const [partCategories, setPartCategoriesState] = useState<string[]>([
-    "Uncategorized", "Electronic", "Mechanical", "Plastic"
+    DEFAULT_PART_CATEGORY, "Electronic", "Mechanical", "Plastic"
   ]);
   
   // Load categories and units from localStorage
@@ -44,7 +45,13 @@ export function useCategoriesAndUnits() {
         }
         
         if (savedPartCategories) {
-          setPartCategoriesState(JSON.parse(savedPartCategories));
+          const parsedPartCategories = JSON.parse(savedPartCategories);
+          // Ensure DEFAULT_PART_CATEGORY is always present
+          if (!parsedPartCategories.includes(DEFAULT_PART_CATEGORY)) {
+            parsedPartCategories.unshift(DEFAULT_PART_CATEGORY);
+          }
+          setPartCategoriesState(parsedPartCategories);
+          localStorage.setItem('factory-planner-part-categories', JSON.stringify(parsedPartCategories));
         } else {
           // If not found in localStorage, save the default values
           localStorage.setItem('factory-planner-part-categories', JSON.stringify(partCategories));
@@ -80,6 +87,10 @@ export function useCategoriesAndUnits() {
   };
   
   const setPartCategories = (newCategories: string[]) => {
+    // Ensure DEFAULT_PART_CATEGORY is always present
+    if (!newCategories.includes(DEFAULT_PART_CATEGORY)) {
+      newCategories.unshift(DEFAULT_PART_CATEGORY);
+    }
     setPartCategoriesState(newCategories);
     try {
       localStorage.setItem('factory-planner-part-categories', JSON.stringify(newCategories));
