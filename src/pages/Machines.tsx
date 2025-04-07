@@ -22,6 +22,7 @@ import CategoryManager from '@/components/machines/CategoryManager';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { MachineStats } from '@/components/machines/MachineStats';
 import { MachineFilter } from '@/components/machines/MachineFilter';
+import DbStructureViewer from '@/components/machines/DbStructureViewer';
 
 const Machines = () => {
   const { machines, machineCategories, setMachineCategories, addMachine, removeMachine } = useData();
@@ -105,6 +106,7 @@ const Machines = () => {
         </div>
         
         <div className="flex flex-wrap justify-end gap-2">
+          <DbStructureViewer />
           <Button 
             variant="outline" 
             onClick={() => setIsCategoryManagerOpen(true)}
