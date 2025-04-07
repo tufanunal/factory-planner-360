@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -11,9 +11,10 @@ import { RawMaterial } from '@/types/rawMaterial';
 import UnitManager from '@/components/common/UnitManager';
 import RawMaterialEditModal from '@/components/rawMaterials/RawMaterialEditModal';
 import { toast } from 'sonner';
+import DbStructureViewer from '@/components/machines/DbStructureViewer';
 
 const RawMaterialsPage = () => {
-  const { rawMaterials, setRawMaterials, units } = useData();
+  const { rawMaterials, addRawMaterial, updateRawMaterial, removeRawMaterial, units } = useData();
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedRawMaterial, setSelectedRawMaterial] = useState<RawMaterial | null>(null);
@@ -32,22 +33,32 @@ const RawMaterialsPage = () => {
     setIsModalOpen(false);
   };
 
-  const handleSaveRawMaterial = (rawMaterial: RawMaterial) => {
-    if (rawMaterial.id === '') {
-      const newRawMaterial = {
-        ...rawMaterial,
-        id: Math.random().toString(36).substring(2, 15)
-      };
-      setRawMaterials([...rawMaterials, newRawMaterial]);
-    } else {
-      setRawMaterials(rawMaterials.map(m => m.id === rawMaterial.id ? rawMaterial : m));
+  const handleSaveRawMaterial = async (rawMaterial: RawMaterial) => {
+    try {
+      if (!rawMaterial.id) {
+        // For new raw materials
+        await addRawMaterial(rawMaterial);
+        toast.success("Raw material added successfully");
+      } else {
+        // For existing raw materials
+        await updateRawMaterial(rawMaterial.id, rawMaterial);
+        toast.success("Raw material updated successfully");
+      }
+      handleCloseModal();
+    } catch (error) {
+      console.error("Error saving raw material:", error);
+      toast.error("Failed to save raw material");
     }
-    handleCloseModal();
   };
 
-  const handleDeleteRawMaterial = (rawMaterialId: string) => {
-    setRawMaterials(rawMaterials.filter(m => m.id !== rawMaterialId));
-    toast.success("Raw material removed successfully");
+  const handleDeleteRawMaterial = async (rawMaterialId: string) => {
+    try {
+      await removeRawMaterial(rawMaterialId);
+      toast.success("Raw material removed successfully");
+    } catch (error) {
+      console.error("Error removing raw material:", error);
+      toast.error("Failed to remove raw material");
+    }
   };
 
   return (
@@ -90,6 +101,7 @@ const RawMaterialsPage = () => {
                 Filters
               </Button>
               <UnitManager />
+              <DbStructureViewer />
             </div>
             
             <div className="rounded-md border">

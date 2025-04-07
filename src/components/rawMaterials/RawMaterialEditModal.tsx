@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { RawMaterial } from '@/types/rawMaterial';
+import { generateId } from '@/utils/idGenerator';
 
 interface RawMaterialEditModalProps {
   rawMaterial: RawMaterial | null;
@@ -37,9 +38,9 @@ const RawMaterialEditModal = ({
         ...rawMaterial
       });
     } else {
-      // Reset form for new raw material
+      // Reset form for new raw material with a generated ID
       setFormData({
-        id: '',
+        id: '',  // ID will be generated on save if needed
         name: '',
         unit: units[0] || 'pcs',
         stock: 0,
@@ -64,8 +65,14 @@ const RawMaterialEditModal = ({
       return;
     }
 
-    onSave(formData);
-    toast.success(`Raw material ${rawMaterial ? 'updated' : 'added'} successfully`);
+    // Ensure ID exists for new materials
+    const materialToSave = { 
+      ...formData,
+      id: formData.id || generateId()
+    };
+
+    // Submit the form
+    onSave(materialToSave);
   };
 
   return (
