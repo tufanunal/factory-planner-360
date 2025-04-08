@@ -1,6 +1,6 @@
 
 import { Part, PartConsumable, PartRawMaterial } from '@/types/all';
-import SqlDatabaseService from '@/services/db/SqlDatabaseService';
+import DatabaseService from '@/services/db/DatabaseServiceAdapter';
 
 export function usePartOperations(
   parts: Part[],
@@ -9,7 +9,7 @@ export function usePartOperations(
   // Part CRUD
   const addPart = async (part: Part) => {
     try {
-      await SqlDatabaseService.savePart(part);
+      await DatabaseService.savePart(part);
       setParts(prevParts => [...prevParts, part]);
     } catch (error) {
       console.error('Error adding part:', error);
@@ -18,7 +18,7 @@ export function usePartOperations(
 
   const updatePart = async (id: string, part: Part) => {
     try {
-      await SqlDatabaseService.savePart(part);
+      await DatabaseService.savePart(part);
       setParts(prevParts =>
         prevParts.map(p => (p.id === id ? part : p))
       );
@@ -29,7 +29,7 @@ export function usePartOperations(
 
   const removePart = async (id: string) => {
     try {
-      await SqlDatabaseService.deletePart(id);
+      await DatabaseService.deletePart(id);
       setParts(prevParts => prevParts.filter(p => p.id !== id));
     } catch (error) {
       console.error('Error removing part:', error);
@@ -51,7 +51,7 @@ export function usePartOperations(
             }
           ]
         };
-        await SqlDatabaseService.savePart(updatedPart);
+        await DatabaseService.savePart(updatedPart);
         setParts(prev => prev.map(p => p.id === part.id ? updatedPart : p));
       }
     } catch (error) {
@@ -67,7 +67,7 @@ export function usePartOperations(
           ...part,
           consumables: part.consumables.filter(c => c.consumableId !== consumableId)
         };
-        await SqlDatabaseService.savePart(updatedPart);
+        await DatabaseService.savePart(updatedPart);
         setParts(prev => prev.map(p => p.id === partId ? updatedPart : p));
       }
     } catch (error) {
@@ -88,7 +88,7 @@ export function usePartOperations(
             return c;
           })
         };
-        await SqlDatabaseService.savePart(updatedPart);
+        await DatabaseService.savePart(updatedPart);
         setParts(prev => prev.map(p => p.id === partId ? updatedPart : p));
       }
     } catch (error) {
@@ -110,7 +110,7 @@ export function usePartOperations(
             }
           ]
         };
-        await SqlDatabaseService.savePart(updatedPart);
+        await DatabaseService.savePart(updatedPart);
         setParts(prev => prev.map(p => p.id === part.id ? updatedPart : p));
       }
     } catch (error) {
@@ -126,7 +126,7 @@ export function usePartOperations(
           ...part,
           rawMaterials: part.rawMaterials.filter(r => r.rawMaterialId !== rawMaterialId)
         };
-        await SqlDatabaseService.savePart(updatedPart);
+        await DatabaseService.savePart(updatedPart);
         setParts(prev => prev.map(p => p.id === partId ? updatedPart : p));
       }
     } catch (error) {
@@ -147,7 +147,7 @@ export function usePartOperations(
             return r;
           })
         };
-        await SqlDatabaseService.savePart(updatedPart);
+        await DatabaseService.savePart(updatedPart);
         setParts(prev => prev.map(p => p.id === partId ? updatedPart : p));
       }
     } catch (error) {

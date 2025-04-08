@@ -1,6 +1,6 @@
 
 import { Machine } from '@/types/all';
-import SqlDatabaseService from '@/services/db/SqlDatabaseService';
+import DatabaseService from '@/services/db/DatabaseServiceAdapter';
 
 export function useMachineOperations(
   machines: Machine[],
@@ -8,7 +8,7 @@ export function useMachineOperations(
 ) {
   const addMachine = async (machine: Machine) => {
     try {
-      await SqlDatabaseService.saveMachine(machine);
+      await DatabaseService.saveMachine(machine);
       setMachines(prevMachines => [...prevMachines, machine]);
     } catch (error) {
       console.error('Error adding machine:', error);
@@ -17,7 +17,7 @@ export function useMachineOperations(
 
   const updateMachine = async (id: string, machine: Machine) => {
     try {
-      await SqlDatabaseService.saveMachine(machine);
+      await DatabaseService.saveMachine(machine);
       setMachines(prevMachines =>
         prevMachines.map(m => (m.id === id ? machine : m))
       );
@@ -28,7 +28,7 @@ export function useMachineOperations(
 
   const removeMachine = async (id: string) => {
     try {
-      await SqlDatabaseService.deleteMachine(id);
+      await DatabaseService.deleteMachine(id);
       setMachines(prevMachines => prevMachines.filter(m => m.id !== id));
     } catch (error) {
       console.error('Error removing machine:', error);

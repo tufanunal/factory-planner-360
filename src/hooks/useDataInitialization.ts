@@ -9,7 +9,7 @@ import {
   PartConsumable, 
   PartRawMaterial 
 } from '@/types/all';
-import SqlDatabaseService from '@/services/db/SqlDatabaseService';
+import DatabaseService from '@/services/db/DatabaseServiceAdapter';
 
 export function useDataInitialization() {
   const [isLoading, setIsLoading] = useState(true);
@@ -25,14 +25,14 @@ export function useDataInitialization() {
     const initializeData = async () => {
       try {
         console.log('Initializing database service...');
-        await SqlDatabaseService.initialize();
+        await DatabaseService.initialize();
         
         console.log('Loading data from database...');
-        const loadedMachines = await SqlDatabaseService.getMachines();
-        const loadedParts = await SqlDatabaseService.getParts();
-        const loadedConsumables = await SqlDatabaseService.getConsumables();
-        const loadedRawMaterials = await SqlDatabaseService.getRawMaterials();
-        const loadedCalendarState = await SqlDatabaseService.getCalendarState();
+        const loadedMachines = await DatabaseService.getMachines();
+        const loadedParts = await DatabaseService.getParts();
+        const loadedConsumables = await DatabaseService.getConsumables();
+        const loadedRawMaterials = await DatabaseService.getRawMaterials();
+        const loadedCalendarState = await DatabaseService.getCalendarState();
         
         console.log('Setting state with loaded data...');
         setMachines(loadedMachines || []);
@@ -72,7 +72,7 @@ export function useDataInitialization() {
           };
           
           console.log('Creating initial calendar state...');
-          await SqlDatabaseService.setCalendarState(initialCalendarState);
+          await DatabaseService.setCalendarState(initialCalendarState);
           setCalendarState(initialCalendarState);
         } else {
           setCalendarState(loadedCalendarState);

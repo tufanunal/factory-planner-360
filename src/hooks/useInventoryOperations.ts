@@ -1,6 +1,6 @@
 
 import { Consumable, RawMaterial } from '@/types/all';
-import SqlDatabaseService from '@/services/db/SqlDatabaseService';
+import DatabaseService from '@/services/db/DatabaseServiceAdapter';
 import { generateId } from '@/utils/idGenerator';
 
 export function useInventoryOperations(
@@ -17,7 +17,7 @@ export function useInventoryOperations(
       }
       
       // Save to database first
-      const savedConsumable = await SqlDatabaseService.saveConsumable(consumable);
+      const savedConsumable = await DatabaseService.saveConsumable(consumable);
       console.log("Consumable saved to database:", savedConsumable);
       
       // Then update state
@@ -31,7 +31,7 @@ export function useInventoryOperations(
   const updateConsumable = async (id: string, consumable: Consumable): Promise<void> => {
     try {
       // Save to database first
-      const updatedConsumable = await SqlDatabaseService.saveConsumable(consumable);
+      const updatedConsumable = await DatabaseService.saveConsumable(consumable);
       console.log("Consumable updated in database:", updatedConsumable);
       
       // Then update state
@@ -47,7 +47,7 @@ export function useInventoryOperations(
   const removeConsumable = async (id: string): Promise<void> => {
     try {
       // Delete from database first
-      await SqlDatabaseService.deleteConsumable(id);
+      await DatabaseService.deleteConsumable(id);
       console.log("Consumable removed from database:", id);
       
       // Then update state
@@ -68,7 +68,7 @@ export function useInventoryOperations(
       }
       
       // Save to database first
-      const savedMaterial = await SqlDatabaseService.saveRawMaterial(rawMaterial);
+      const savedMaterial = await DatabaseService.saveRawMaterial(rawMaterial);
       console.log("Raw material saved to database:", savedMaterial);
       
       // Then update the state
@@ -85,7 +85,7 @@ export function useInventoryOperations(
       rawMaterial.id = id;
       
       // Save to database first
-      const updatedMaterial = await SqlDatabaseService.saveRawMaterial(rawMaterial);
+      const updatedMaterial = await DatabaseService.saveRawMaterial(rawMaterial);
       console.log("Raw material updated in database:", updatedMaterial);
       
       // Then update the state
@@ -101,7 +101,7 @@ export function useInventoryOperations(
   const removeRawMaterial = async (id: string): Promise<void> => {
     try {
       // Delete from database first
-      await SqlDatabaseService.deleteRawMaterial(id);
+      await DatabaseService.deleteRawMaterial(id);
       console.log("Raw material removed from database:", id);
       
       // Then update the state
