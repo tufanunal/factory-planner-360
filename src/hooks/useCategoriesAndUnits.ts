@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { DEFAULT_CATEGORY } from '@/components/machines/CategoryManager';
-import { DEFAULT_PART_CATEGORY } from '@/components/parts/PartCategoryManager';
+import { DEFAULT_PART_CATEGORY } from '@/components/parts/category/PartCategoryManager';
 import SqlDatabaseService from '@/services/db/SqlDatabaseService';
 
 export function useCategoriesAndUnits() {

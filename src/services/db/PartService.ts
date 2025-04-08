@@ -1,7 +1,6 @@
-
 import { Part } from '@/types/part';
 import { generateId } from '@/utils/idGenerator';
-import { DEFAULT_PART_CATEGORY } from '@/components/parts/PartCategoryManager';
+import { DEFAULT_PART_CATEGORY } from '@/components/parts/category/PartCategoryManager';
 
 export class PartService {
   private db: any;

@@ -6,7 +6,7 @@ import { Box } from 'lucide-react';
 import { Part } from '@/types/part';
 import PartCard from '@/components/parts/PartCard';
 import PartEditModal from '@/components/parts/PartEditModal';
-import PartCategoryManager from '@/components/parts/PartCategoryManager';
+import PartCategoryManager from '@/components/parts/category/PartCategoryManager';
 import { toast } from 'sonner';
 import { useData } from '@/contexts/DataContext';
 import PartFilters from '@/components/parts/PartFilters';
