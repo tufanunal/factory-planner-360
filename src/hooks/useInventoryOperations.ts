@@ -46,7 +46,7 @@ export function useInventoryOperations(
   };
   
   // Raw Materials
-  const addRawMaterial = async (rawMaterial: RawMaterial) => {
+  const addRawMaterial = async (rawMaterial: RawMaterial): Promise<void> => {
     try {
       // Ensure the material has an ID
       if (!rawMaterial.id) {
@@ -59,14 +59,13 @@ export function useInventoryOperations(
       
       // Then update the state
       setRawMaterials(prevRawMaterials => [...prevRawMaterials, savedMaterial]);
-      return savedMaterial;
     } catch (error) {
       console.error('Error adding raw material:', error);
       throw error;
     }
   };
 
-  const updateRawMaterial = async (id: string, rawMaterial: RawMaterial) => {
+  const updateRawMaterial = async (id: string, rawMaterial: RawMaterial): Promise<void> => {
     try {
       // Save to database first
       const updatedMaterial = await SqlDatabaseService.saveRawMaterial(rawMaterial);
@@ -76,7 +75,6 @@ export function useInventoryOperations(
       setRawMaterials(prevRawMaterials =>
         prevRawMaterials.map(rm => (rm.id === id ? updatedMaterial : rm))
       );
-      return updatedMaterial;
     } catch (error) {
       console.error('Error updating raw material:', error);
       throw error;
