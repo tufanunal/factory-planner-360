@@ -1,5 +1,6 @@
+
 import { Machine, Part, Consumable, RawMaterial, Unit, CalendarState, PartConsumable, PartRawMaterial } from '@/types/all';
-import { StorageService } from './StorageService';
+import { DatabaseManager } from './DatabaseManager';
 import { UnitService } from './UnitService';
 import { MachineService } from './MachineService';
 import { PartService } from './PartService';
@@ -17,306 +18,198 @@ import { CalendarService } from './CalendarService';
  * this would be replaced with a real database implementation.
  */
 class SqlDatabaseService {
-  private db: any = null;
-  private initialized = false;
-  private storageService: StorageService;
+  private databaseManager: DatabaseManager;
   
   // Service instances
-  private unitService: UnitService;
-  private machineService: MachineService;
-  private partService: PartService;
-  private consumableService: ConsumableService;
-  private rawMaterialService: RawMaterialService;
-  private partConsumableService: PartConsumableService;
-  private partRawMaterialService: PartRawMaterialService;
-  private calendarService: CalendarService;
+  private unitService: UnitService | null = null;
+  private machineService: MachineService | null = null;
+  private partService: PartService | null = null;
+  private consumableService: ConsumableService | null = null;
+  private rawMaterialService: RawMaterialService | null = null;
+  private partConsumableService: PartConsumableService | null = null;
+  private partRawMaterialService: PartRawMaterialService | null = null;
+  private calendarService: CalendarService | null = null;
   
   constructor() {
-    this.storageService = new StorageService('factory-planner-data');
-    
-    // These will be initialized after this.db is loaded
-    this.unitService = new UnitService(this.db);
-    this.machineService = new MachineService(this.db);
-    this.partService = new PartService(this.db);
-    this.consumableService = new ConsumableService(this.db);
-    this.rawMaterialService = new RawMaterialService(this.db);
-    this.partConsumableService = new PartConsumableService(this.db);
-    this.partRawMaterialService = new PartRawMaterialService(this.db);
-    this.calendarService = new CalendarService(this.db);
+    this.databaseManager = new DatabaseManager('factory-planner-data');
   }
   
   async initialize(): Promise<void> {
-    if (this.initialized) return;
-    
-    try {
-      // Attempt to load data from localStorage
-      this.loadFromStorage();
-      
-      // Ensure db is initialized with proper structure
-      if (!this.db) {
-        // Initialize with empty data structure
-        this.initializeEmptyDatabase();
-        // Save initial data structure
-        await this.saveToStorage();
-      } else {
-        // Ensure all required collections exist in the loaded data
-        this.ensureDataStructure();
-      }
-      
-      // Reinitialize services with the loaded db
-      this.initializeServices();
-      
-      this.initialized = true;
-      console.info('Data persistence layer initialized successfully:', this.db);
-    } catch (error) {
-      console.error('Failed to initialize persistence layer:', error);
-      // Initialize with empty data in case of error
-      this.initializeEmptyDatabase();
-      this.initializeServices();
-      this.initialized = true;
-      throw error;
+    const db = await this.databaseManager.initialize();
+    this.initializeServices(db);
+  }
+  
+  private initializeServices(db: any): void {
+    this.unitService = new UnitService(db);
+    this.machineService = new MachineService(db);
+    this.partService = new PartService(db);
+    this.consumableService = new ConsumableService(db);
+    this.rawMaterialService = new RawMaterialService(db);
+    this.partConsumableService = new PartConsumableService(db);
+    this.partRawMaterialService = new PartRawMaterialService(db);
+    this.calendarService = new CalendarService(db);
+  }
+  
+  private async ensureInitialized(): Promise<void> {
+    if (!this.databaseManager.isInitialized()) {
+      await this.initialize();
     }
   }
   
-  private initializeEmptyDatabase(): void {
-    this.db = {
-      machines: [],
-      parts: [],
-      consumables: [],
-      rawMaterials: [],
-      units: [],
-      calendar: null,
-      partConsumables: [],
-      partRawMaterials: []
-    };
-    console.log('Initialized empty database structure');
-  }
-  
-  private ensureDataStructure(): void {
-    // Ensure all required collections exist
-    this.db.machines = this.db.machines || [];
-    this.db.parts = this.db.parts || [];
-    this.db.consumables = this.db.consumables || [];
-    this.db.rawMaterials = this.db.rawMaterials || [];
-    this.db.units = this.db.units || [];
-    this.db.partConsumables = this.db.partConsumables || [];
-    this.db.partRawMaterials = this.db.partRawMaterials || [];
-    
-    // Make sure calendar data has correct structure if it exists
-    if (this.db.calendar) {
-      this.db.calendar.shiftTimes = this.db.calendar.shiftTimes || [];
-      this.db.calendar.dayShiftToggles = this.db.calendar.dayShiftToggles || [];
-      this.db.calendar.holidays = this.db.calendar.holidays || [];
-      this.db.calendar.viewDate = this.db.calendar.viewDate || new Date().toISOString().split('T')[0];
-    }
-    console.log('Ensured database structure is complete');
-  }
-  
-  private initializeServices(): void {
-    this.unitService = new UnitService(this.db);
-    this.machineService = new MachineService(this.db);
-    this.partService = new PartService(this.db);
-    this.consumableService = new ConsumableService(this.db);
-    this.rawMaterialService = new RawMaterialService(this.db);
-    this.partConsumableService = new PartConsumableService(this.db);
-    this.partRawMaterialService = new PartRawMaterialService(this.db);
-    this.calendarService = new CalendarService(this.db);
-  }
-  
-  private loadFromStorage(): void {
-    try {
-      const loadedDb = this.storageService.loadFromStorage<any>();
-      if (loadedDb) {
-        this.db = loadedDb;
-        console.log('Database loaded from storage successfully:', this.db);
-      } else {
-        console.warn('No data found in storage, will initialize empty database');
-      }
-    } catch (error) {
-      console.error('Failed to load data from storage:', error);
-      this.db = null;
-    }
-  }
-  
-  private async saveToStorage(): Promise<void> {
-    if (!this.db) {
-      console.error('Attempted to save before database was initialized');
-      throw new Error('Database not initialized');
-    }
-    
-    try {
-      await this.storageService.saveToStorage(this.db);
-      console.log('Database saved to storage successfully');
-    } catch (error) {
-      console.error('Failed to save data to storage:', error);
-      // Try to save with minimal data if storage limit is an issue
-      try {
-        const minimalData = { 
-          machines: this.db.machines, 
-          parts: this.db.parts,
-          consumables: this.db.consumables,
-          rawMaterials: this.db.rawMaterials,
-          calendar: this.db.calendar
-        };
-        await this.storageService.saveToStorage(minimalData);
-        console.log('Saved minimal data to storage');
-      } catch (fallbackError) {
-        console.error('Critical error: Could not save even minimal data', fallbackError);
-        throw fallbackError;
-      }
-    }
+  private async saveChanges(): Promise<void> {
+    await this.databaseManager.saveToStorage();
   }
 
   // Unit methods
   async getUnits(): Promise<Unit[]> {
-    if (!this.initialized) await this.initialize();
-    return this.unitService.getUnits();
+    await this.ensureInitialized();
+    return this.unitService!.getUnits();
   }
 
   async saveUnit(unit: Unit): Promise<Unit> {
-    if (!this.initialized) await this.initialize();
-    const savedUnit = this.unitService.saveUnit(unit);
-    await this.saveToStorage();
+    await this.ensureInitialized();
+    const savedUnit = this.unitService!.saveUnit(unit);
+    await this.saveChanges();
     return savedUnit;
   }
 
   async deleteUnit(id: string): Promise<void> {
-    if (!this.initialized) await this.initialize();
-    this.unitService.deleteUnit(id);
-    await this.saveToStorage();
+    await this.ensureInitialized();
+    this.unitService!.deleteUnit(id);
+    await this.saveChanges();
   }
 
   // Machine methods
   async getMachines(): Promise<Machine[]> {
-    if (!this.initialized) await this.initialize();
-    return this.machineService.getMachines();
+    await this.ensureInitialized();
+    return this.machineService!.getMachines();
   }
 
   async saveMachine(machine: Machine): Promise<Machine> {
-    if (!this.initialized) await this.initialize();
-    const savedMachine = this.machineService.saveMachine(machine);
-    await this.saveToStorage();
+    await this.ensureInitialized();
+    const savedMachine = this.machineService!.saveMachine(machine);
+    await this.saveChanges();
     return savedMachine;
   }
 
   async deleteMachine(id: string): Promise<void> {
-    if (!this.initialized) await this.initialize();
-    this.machineService.deleteMachine(id);
-    await this.saveToStorage();
+    await this.ensureInitialized();
+    this.machineService!.deleteMachine(id);
+    await this.saveChanges();
   }
 
   // Part methods
   async getParts(): Promise<Part[]> {
-    if (!this.initialized) await this.initialize();
-    return this.partService.getParts();
+    await this.ensureInitialized();
+    return this.partService!.getParts();
   }
 
   async savePart(part: Part): Promise<Part> {
-    if (!this.initialized) await this.initialize();
-    const savedPart = this.partService.savePart(part);
-    await this.saveToStorage();
+    await this.ensureInitialized();
+    const savedPart = this.partService!.savePart(part);
+    await this.saveChanges();
     return savedPart;
   }
 
   async deletePart(id: string): Promise<void> {
-    if (!this.initialized) await this.initialize();
-    this.partService.deletePart(id);
-    await this.saveToStorage();
+    await this.ensureInitialized();
+    this.partService!.deletePart(id);
+    await this.saveChanges();
   }
 
   // Consumable methods
   async getConsumables(): Promise<Consumable[]> {
-    if (!this.initialized) await this.initialize();
-    return this.consumableService.getConsumables();
+    await this.ensureInitialized();
+    return this.consumableService!.getConsumables();
   }
 
   async saveConsumable(consumable: Consumable): Promise<Consumable> {
-    if (!this.initialized) await this.initialize();
-    const savedConsumable = this.consumableService.saveConsumable(consumable);
-    await this.saveToStorage();
+    await this.ensureInitialized();
+    const savedConsumable = this.consumableService!.saveConsumable(consumable);
+    await this.saveChanges();
     return savedConsumable;
   }
 
   async deleteConsumable(id: string): Promise<void> {
-    if (!this.initialized) await this.initialize();
-    this.consumableService.deleteConsumable(id);
-    await this.saveToStorage();
+    await this.ensureInitialized();
+    this.consumableService!.deleteConsumable(id);
+    await this.saveChanges();
   }
 
   // Raw Material methods
   async getRawMaterials(): Promise<RawMaterial[]> {
-    if (!this.initialized) await this.initialize();
-    const materials = this.rawMaterialService.getRawMaterials();
+    await this.ensureInitialized();
+    const materials = this.rawMaterialService!.getRawMaterials();
     console.log('Retrieved raw materials from database:', materials);
     return materials;
   }
 
   async saveRawMaterial(material: RawMaterial): Promise<RawMaterial> {
-    if (!this.initialized) await this.initialize();
-    const savedMaterial = this.rawMaterialService.saveRawMaterial(material);
-    await this.saveToStorage();
+    await this.ensureInitialized();
+    const savedMaterial = this.rawMaterialService!.saveRawMaterial(material);
+    await this.saveChanges();
     console.log('Raw material saved to database:', savedMaterial);
     return savedMaterial;
   }
 
   async deleteRawMaterial(id: string): Promise<void> {
-    if (!this.initialized) await this.initialize();
-    this.rawMaterialService.deleteRawMaterial(id);
-    await this.saveToStorage();
+    await this.ensureInitialized();
+    this.rawMaterialService!.deleteRawMaterial(id);
+    await this.saveChanges();
     console.log('Raw material deleted from database:', id);
   }
 
   // Part Consumable methods
   async getPartConsumables(): Promise<PartConsumable[]> {
-    if (!this.initialized) await this.initialize();
-    return this.partConsumableService.getPartConsumables();
+    await this.ensureInitialized();
+    return this.partConsumableService!.getPartConsumables();
   }
 
   async savePartConsumable(partConsumable: PartConsumable): Promise<PartConsumable> {
-    if (!this.initialized) await this.initialize();
-    const savedPartConsumable = this.partConsumableService.savePartConsumable(partConsumable);
-    await this.saveToStorage();
+    await this.ensureInitialized();
+    const savedPartConsumable = this.partConsumableService!.savePartConsumable(partConsumable);
+    await this.saveChanges();
     return savedPartConsumable;
   }
 
   async deletePartConsumable(partId: string, consumableId: string): Promise<void> {
-    if (!this.initialized) await this.initialize();
-    this.partConsumableService.deletePartConsumable(partId, consumableId);
-    await this.saveToStorage();
+    await this.ensureInitialized();
+    this.partConsumableService!.deletePartConsumable(partId, consumableId);
+    await this.saveChanges();
   }
 
   // Part Raw Material methods
   async getPartRawMaterials(): Promise<PartRawMaterial[]> {
-    if (!this.initialized) await this.initialize();
-    return this.partRawMaterialService.getPartRawMaterials();
+    await this.ensureInitialized();
+    return this.partRawMaterialService!.getPartRawMaterials();
   }
 
   async savePartRawMaterial(partRawMaterial: PartRawMaterial): Promise<PartRawMaterial> {
-    if (!this.initialized) await this.initialize();
-    const savedPartRawMaterial = this.partRawMaterialService.savePartRawMaterial(partRawMaterial);
-    await this.saveToStorage();
+    await this.ensureInitialized();
+    const savedPartRawMaterial = this.partRawMaterialService!.savePartRawMaterial(partRawMaterial);
+    await this.saveChanges();
     return savedPartRawMaterial;
   }
 
   async deletePartRawMaterial(partId: string, rawMaterialId: string): Promise<void> {
-    if (!this.initialized) await this.initialize();
-    this.partRawMaterialService.deletePartRawMaterial(partId, rawMaterialId);
-    await this.saveToStorage();
+    await this.ensureInitialized();
+    this.partRawMaterialService!.deletePartRawMaterial(partId, rawMaterialId);
+    await this.saveChanges();
   }
 
   // Calendar methods
   async getCalendarState(): Promise<CalendarState | null> {
-    if (!this.initialized) await this.initialize();
-    return this.calendarService.getCalendarState();
+    await this.ensureInitialized();
+    return this.calendarService!.getCalendarState();
   }
 
   async setCalendarState(calendarState: CalendarState): Promise<void> {
-    if (!this.initialized) await this.initialize();
+    await this.ensureInitialized();
     
-    this.calendarService.setCalendarState(calendarState);
+    this.calendarService!.setCalendarState(calendarState);
     
     try {
-      await this.saveToStorage();
+      await this.saveChanges();
       console.log("Calendar state saved successfully");
     } catch (error) {
       console.error("Error saving calendar state:", error);
@@ -326,22 +219,13 @@ class SqlDatabaseService {
   
   // For debugging and troubleshooting
   async dumpDatabase(): Promise<any> {
-    if (!this.initialized) await this.initialize();
-    return this.db;
+    await this.ensureInitialized();
+    return this.databaseManager.dumpDatabase();
   }
   
   async clearDatabase(): Promise<void> {
-    this.db = {
-      machines: [],
-      parts: [],
-      consumables: [],
-      rawMaterials: [],
-      units: [],
-      calendar: null,
-      partConsumables: [],
-      partRawMaterials: []
-    };
-    await this.saveToStorage();
+    await this.ensureInitialized();
+    await this.databaseManager.clearDatabase();
     console.log("Database cleared");
   }
 }

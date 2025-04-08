@@ -1,6 +1,6 @@
 
 /**
- * Service to handle localStorage operations
+ * Service to handle localStorage operations with improved error handling and logging
  */
 export class StorageService {
   private storageKey: string;
@@ -27,6 +27,12 @@ export class StorageService {
   async saveToStorage(data: any): Promise<void> {
     return new Promise<void>((resolve, reject) => {
       try {
+        if (data === undefined || data === null) {
+          console.error(`Attempted to save undefined or null data to ${this.storageKey}`);
+          reject(new Error('Cannot save undefined or null data'));
+          return;
+        }
+        
         const dataToSave = JSON.stringify(data);
         localStorage.setItem(this.storageKey, dataToSave);
         console.log(`Data saved to ${this.storageKey} successfully:`, data);
@@ -36,5 +42,14 @@ export class StorageService {
         reject(error);
       }
     });
+  }
+  
+  clearStorage(): void {
+    try {
+      localStorage.removeItem(this.storageKey);
+      console.log(`Storage key ${this.storageKey} cleared successfully`);
+    } catch (error) {
+      console.error(`Failed to clear storage key ${this.storageKey}:`, error);
+    }
   }
 }
