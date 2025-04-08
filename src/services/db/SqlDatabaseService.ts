@@ -1,4 +1,3 @@
-
 import { Machine, Part, Consumable, RawMaterial, Unit, CalendarState, PartConsumable, PartRawMaterial } from '@/types/all';
 import { StorageService } from './StorageService';
 import { UnitService } from './UnitService';
@@ -50,35 +49,67 @@ class SqlDatabaseService {
     if (this.initialized) return;
     
     try {
-      // Load data from localStorage first
+      // Attempt to load data from localStorage
       this.loadFromStorage();
       
+      // Ensure db is initialized with proper structure
       if (!this.db) {
-        // Initialize with empty data
-        this.db = {
-          machines: [],
-          parts: [],
-          consumables: [],
-          rawMaterials: [],
-          units: [],
-          calendar: null,
-          partConsumables: [],
-          partRawMaterials: []
-        };
-        
-        // Save initial data
+        // Initialize with empty data structure
+        this.initializeEmptyDatabase();
+        // Save initial data structure
         await this.saveToStorage();
+      } else {
+        // Ensure all required collections exist in the loaded data
+        this.ensureDataStructure();
       }
       
       // Reinitialize services with the loaded db
       this.initializeServices();
       
       this.initialized = true;
-      console.info('Data persistence layer initialized successfully');
+      console.info('Data persistence layer initialized successfully:', this.db);
     } catch (error) {
       console.error('Failed to initialize persistence layer:', error);
+      // Initialize with empty data in case of error
+      this.initializeEmptyDatabase();
+      this.initializeServices();
+      this.initialized = true;
       throw error;
     }
+  }
+  
+  private initializeEmptyDatabase(): void {
+    this.db = {
+      machines: [],
+      parts: [],
+      consumables: [],
+      rawMaterials: [],
+      units: [],
+      calendar: null,
+      partConsumables: [],
+      partRawMaterials: []
+    };
+    console.log('Initialized empty database structure');
+  }
+  
+  private ensureDataStructure(): void {
+    // Ensure all required collections exist
+    this.db.machines = this.db.machines || [];
+    this.db.parts = this.db.parts || [];
+    this.db.consumables = this.db.consumables || [];
+    this.db.rawMaterials = this.db.rawMaterials || [];
+    this.db.units = this.db.units || [];
+    this.db.partConsumables = this.db.partConsumables || [];
+    this.db.partRawMaterials = this.db.partRawMaterials || [];
+    
+    // Make sure calendar data has correct structure if it exists
+    if (this.db.calendar) {
+      this.db.calendar.shiftTimes = this.db.calendar.shiftTimes || [];
+      this.db.calendar.dayShiftToggles = this.db.calendar.dayShiftToggles || [];
+      this.db.calendar.holidays = this.db.calendar.holidays || [];
+      this.db.calendar.viewDate = this.db.calendar.viewDate || new Date().toISOString().split('T')[0];
+    }
+    console.log('Ensured database structure is complete');
   }
   
   private initializeServices(): void {
@@ -97,38 +128,13 @@ class SqlDatabaseService {
       const loadedDb = this.storageService.loadFromStorage<any>();
       if (loadedDb) {
         this.db = loadedDb;
-        console.log('Data loaded from storage:', this.db);
-        
-        // Ensure all required collections exist
-        this.db.machines = this.db.machines || [];
-        this.db.parts = this.db.parts || [];
-        this.db.consumables = this.db.consumables || [];
-        this.db.rawMaterials = this.db.rawMaterials || [];
-        this.db.units = this.db.units || [];
-        this.db.partConsumables = this.db.partConsumables || [];
-        this.db.partRawMaterials = this.db.partRawMaterials || [];
-        
-        // Make sure calendar data has correct structure if it exists
-        if (this.db.calendar) {
-          this.db.calendar.shiftTimes = this.db.calendar.shiftTimes || [];
-          this.db.calendar.dayShiftToggles = this.db.calendar.dayShiftToggles || [];
-          this.db.calendar.holidays = this.db.calendar.holidays || [];
-          this.db.calendar.viewDate = this.db.calendar.viewDate || new Date().toISOString().split('T')[0];
-        }
+        console.log('Database loaded from storage successfully:', this.db);
+      } else {
+        console.warn('No data found in storage, will initialize empty database');
       }
     } catch (error) {
       console.error('Failed to load data from storage:', error);
-      // Initialize with empty data in case of error
-      this.db = {
-        machines: [],
-        parts: [],
-        consumables: [],
-        rawMaterials: [],
-        units: [],
-        calendar: null,
-        partConsumables: [],
-        partRawMaterials: []
-      };
+      this.db = null;
     }
   }
   
@@ -140,6 +146,7 @@ class SqlDatabaseService {
     
     try {
       await this.storageService.saveToStorage(this.db);
+      console.log('Database saved to storage successfully');
     } catch (error) {
       console.error('Failed to save data to storage:', error);
       // Try to save with minimal data if storage limit is an issue
@@ -239,13 +246,16 @@ class SqlDatabaseService {
   // Raw Material methods
   async getRawMaterials(): Promise<RawMaterial[]> {
     if (!this.initialized) await this.initialize();
-    return this.rawMaterialService.getRawMaterials();
+    const materials = this.rawMaterialService.getRawMaterials();
+    console.log('Retrieved raw materials from database:', materials);
+    return materials;
   }
 
   async saveRawMaterial(material: RawMaterial): Promise<RawMaterial> {
     if (!this.initialized) await this.initialize();
     const savedMaterial = this.rawMaterialService.saveRawMaterial(material);
     await this.saveToStorage();
+    console.log('Raw material saved to database:', savedMaterial);
     return savedMaterial;
   }
 
@@ -253,6 +263,7 @@ class SqlDatabaseService {
     if (!this.initialized) await this.initialize();
     this.rawMaterialService.deleteRawMaterial(id);
     await this.saveToStorage();
+    console.log('Raw material deleted from database:', id);
   }
 
   // Part Consumable methods

@@ -13,11 +13,14 @@ export class StorageService {
     try {
       const storedData = localStorage.getItem(this.storageKey);
       if (storedData) {
-        return JSON.parse(storedData);
+        const parsedData = JSON.parse(storedData);
+        console.log(`Successfully loaded data from ${this.storageKey}:`, parsedData);
+        return parsedData;
       }
     } catch (error) {
-      console.error('Failed to load data from storage:', error);
+      console.error(`Failed to load data from ${this.storageKey}:`, error);
     }
+    console.warn(`No data found in ${this.storageKey}`);
     return null;
   }
   
@@ -26,10 +29,10 @@ export class StorageService {
       try {
         const dataToSave = JSON.stringify(data);
         localStorage.setItem(this.storageKey, dataToSave);
-        console.log('Data saved to storage successfully');
+        console.log(`Data saved to ${this.storageKey} successfully:`, data);
         resolve();
       } catch (error) {
-        console.error('Failed to save data to storage:', error);
+        console.error(`Failed to save data to ${this.storageKey}:`, error);
         reject(error);
       }
     });

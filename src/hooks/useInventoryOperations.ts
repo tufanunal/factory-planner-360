@@ -10,24 +10,33 @@ export function useInventoryOperations(
   setRawMaterials: React.Dispatch<React.SetStateAction<RawMaterial[]>>
 ) {
   // Consumables
-  const addConsumable = async (consumable: Consumable) => {
+  const addConsumable = async (consumable: Consumable): Promise<void> => {
     try {
       if (!consumable.id) {
         consumable.id = generateId();
       }
-      await SqlDatabaseService.saveConsumable(consumable);
-      setConsumables(prevConsumables => [...prevConsumables, consumable]);
+      
+      // Save to database first
+      const savedConsumable = await SqlDatabaseService.saveConsumable(consumable);
+      console.log("Consumable saved to database:", savedConsumable);
+      
+      // Then update state
+      setConsumables(prevConsumables => [...prevConsumables, savedConsumable]);
     } catch (error) {
       console.error('Error adding consumable:', error);
       throw error;
     }
   };
 
-  const updateConsumable = async (id: string, consumable: Consumable) => {
+  const updateConsumable = async (id: string, consumable: Consumable): Promise<void> => {
     try {
-      await SqlDatabaseService.saveConsumable(consumable);
+      // Save to database first
+      const updatedConsumable = await SqlDatabaseService.saveConsumable(consumable);
+      console.log("Consumable updated in database:", updatedConsumable);
+      
+      // Then update state
       setConsumables(prevConsumables =>
-        prevConsumables.map(c => (c.id === id ? consumable : c))
+        prevConsumables.map(c => (c.id === id ? updatedConsumable : c))
       );
     } catch (error) {
       console.error('Error updating consumable:', error);
@@ -35,9 +44,13 @@ export function useInventoryOperations(
     }
   };
 
-  const removeConsumable = async (id: string) => {
+  const removeConsumable = async (id: string): Promise<void> => {
     try {
+      // Delete from database first
       await SqlDatabaseService.deleteConsumable(id);
+      console.log("Consumable removed from database:", id);
+      
+      // Then update state
       setConsumables(prevConsumables => prevConsumables.filter(c => c.id !== id));
     } catch (error) {
       console.error('Error removing consumable:', error);
@@ -51,6 +64,7 @@ export function useInventoryOperations(
       // Ensure the material has an ID
       if (!rawMaterial.id) {
         rawMaterial.id = generateId();
+        console.log("Generated ID for new raw material:", rawMaterial.id);
       }
       
       // Save to database first
@@ -67,6 +81,9 @@ export function useInventoryOperations(
 
   const updateRawMaterial = async (id: string, rawMaterial: RawMaterial): Promise<void> => {
     try {
+      // Ensure ID is set correctly
+      rawMaterial.id = id;
+      
       // Save to database first
       const updatedMaterial = await SqlDatabaseService.saveRawMaterial(rawMaterial);
       console.log("Raw material updated in database:", updatedMaterial);
@@ -81,7 +98,7 @@ export function useInventoryOperations(
     }
   };
 
-  const removeRawMaterial = async (id: string) => {
+  const removeRawMaterial = async (id: string): Promise<void> => {
     try {
       // Delete from database first
       await SqlDatabaseService.deleteRawMaterial(id);

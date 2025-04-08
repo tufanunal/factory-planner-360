@@ -24,20 +24,24 @@ export function useDataInitialization() {
   useEffect(() => {
     const initializeData = async () => {
       try {
+        console.log('Initializing database service...');
         await SqlDatabaseService.initialize();
         
+        console.log('Loading data from database...');
         const loadedMachines = await SqlDatabaseService.getMachines();
         const loadedParts = await SqlDatabaseService.getParts();
         const loadedConsumables = await SqlDatabaseService.getConsumables();
         const loadedRawMaterials = await SqlDatabaseService.getRawMaterials();
         const loadedCalendarState = await SqlDatabaseService.getCalendarState();
         
+        console.log('Setting state with loaded data...');
         setMachines(loadedMachines || []);
         setParts(loadedParts || []);
         setConsumables(loadedConsumables || []);
         setRawMaterials(loadedRawMaterials || []);
         
         if (!loadedCalendarState) {
+          // Create default calendar state if none exists
           const initialCalendarState: CalendarState = {
             shiftTimes: [
               {
@@ -67,12 +71,14 @@ export function useDataInitialization() {
             viewDate: new Date().toISOString().split('T')[0]
           };
           
+          console.log('Creating initial calendar state...');
           await SqlDatabaseService.setCalendarState(initialCalendarState);
           setCalendarState(initialCalendarState);
         } else {
           setCalendarState(loadedCalendarState);
         }
         
+        console.log('Data initialization complete');
         setIsLoading(false);
       } catch (error) {
         console.error('Error initializing data:', error);
