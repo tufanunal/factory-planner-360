@@ -44,8 +44,6 @@ const colorMap: Record<string, { bg: string, hover: string }> = {
   fuchsia: { bg: "bg-fuchsia-100 dark:bg-fuchsia-900/30", hover: "hover:bg-fuchsia-200 dark:hover:bg-fuchsia-900/50" }
 };
 
-const colorOptions = Object.keys(colorMap);
-
 // Default fallback color
 const defaultColor = { bg: "bg-gray-100 dark:bg-gray-900/30", hover: "hover:bg-gray-200 dark:hover:bg-gray-900/50" };
 
@@ -171,6 +169,16 @@ const WeeklyShiftView = ({
     }
   };
 
+  const getShiftColors = (shift: ShiftTime) => {
+    // Make sure we have a valid color from the colorMap
+    if (shift.color && colorMap[shift.color]) {
+      return colorMap[shift.color];
+    }
+    
+    // Fallback to default color if color is not specified or not in the map
+    return defaultColor;
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -228,7 +236,7 @@ const WeeklyShiftView = ({
         {/* Shift toggles for each day */}
         <div className="divide-y divide-border">
           {shiftTimes.map((shift) => {
-            const colorStyle = shift.color ? colorMap[shift.color] || defaultColor : defaultColor;
+            const colorStyle = getShiftColors(shift);
             
             return (
               <div 
@@ -336,7 +344,7 @@ const WeeklyShiftView = ({
                   <SelectValue placeholder="Select color" />
                 </SelectTrigger>
                 <SelectContent>
-                  {colorOptions.map((color) => (
+                  {Object.keys(colorMap).map((color) => (
                     <SelectItem key={color} value={color}>
                       <div className="flex items-center">
                         <div 
@@ -351,7 +359,7 @@ const WeeklyShiftView = ({
             </div>
             <div className="col-span-4 mt-2">
               <div className="flex flex-wrap gap-2">
-                {colorOptions.map((color) => (
+                {Object.keys(colorMap).map((color) => (
                   <Button 
                     key={color}
                     type="button"
