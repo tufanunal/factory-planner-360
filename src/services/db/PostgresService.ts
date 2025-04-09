@@ -6,9 +6,6 @@ import {
   Part, 
   Consumable, 
   RawMaterial, 
-  Unit, 
-  PartConsumable, 
-  PartRawMaterial, 
   CalendarState 
 } from '@/types/all';
 
@@ -80,7 +77,7 @@ class PostgresService {
     const params = [
       machine.id,
       machine.name,
-      machine.description,
+      machine.description || '',  // Handle optional property
       machine.status,
       machine.availability,
       machine.hourlyCost,
@@ -132,7 +129,7 @@ class PostgresService {
     try {
       await client.query('BEGIN');
       
-      // Insert or update the part
+      // Insert or update the part - match column names with database structure
       const partQuery = `
         INSERT INTO parts (id, name, description, category, unit, cycle_time, pieces_per_cycle)
         VALUES ($1, $2, $3, $4, $5, $6, $7)
@@ -149,11 +146,11 @@ class PostgresService {
       const partParams = [
         part.id,
         part.name,
-        part.description,
+        part.description || '',
         part.category || 'Default',
-        part.unit,
-        part.cycleTime,
-        part.piecesPerCycle
+        part.unit || '',  // Match database column name
+        part.cycleTime || 0,  // Match database column name
+        part.piecesPerCycle || 0  // Match database column name
       ];
       
       const partResult = await client.query(partQuery, partParams);
@@ -242,9 +239,9 @@ class PostgresService {
     const params = [
       consumable.id,
       consumable.name,
-      consumable.description,
-      consumable.unit,
-      consumable.unitCost
+      consumable.description || '',  // Handle optional property
+      consumable.unit || '',
+      consumable.unitCost || 0
     ];
     
     const results = await this.executeQuery<Consumable>(query, params);
@@ -275,9 +272,9 @@ class PostgresService {
     const params = [
       rawMaterial.id,
       rawMaterial.name,
-      rawMaterial.description,
-      rawMaterial.unit,
-      rawMaterial.unitCost
+      rawMaterial.description || '',  // Handle optional property
+      rawMaterial.unit || '',
+      rawMaterial.unitCost || 0
     ];
     
     const results = await this.executeQuery<RawMaterial>(query, params);
