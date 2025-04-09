@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,7 +13,7 @@ import ConsumableEditModal from '@/components/consumables/ConsumableEditModal';
 import { toast } from 'sonner';
 
 const ConsumablesPage = () => {
-  const { consumables, setConsumables, units } = useData();
+  const { consumables, units, addConsumable, updateConsumable, removeConsumable } = useData();
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedConsumable, setSelectedConsumable] = useState<Consumable | null>(null);
@@ -31,22 +32,32 @@ const ConsumablesPage = () => {
     setIsModalOpen(false);
   };
 
-  const handleSaveConsumable = (consumable: Consumable) => {
-    if (!consumable.id) {
-      const newConsumable = {
-        ...consumable,
-        id: Math.random().toString(36).substring(2, 15)
-      };
-      setConsumables([...consumables, newConsumable]);
-    } else {
-      setConsumables(consumables.map(c => c.id === consumable.id ? consumable : c));
+  const handleSaveConsumable = async (consumable: Consumable) => {
+    try {
+      if (!consumable.id) {
+        // For new consumables
+        await addConsumable(consumable);
+        toast.success("Consumable added successfully");
+      } else {
+        // For existing consumables
+        await updateConsumable(consumable.id, consumable);
+        toast.success("Consumable updated successfully");
+      }
+      handleCloseModal();
+    } catch (error) {
+      console.error("Error saving consumable:", error);
+      toast.error("Failed to save consumable");
     }
-    handleCloseModal();
   };
 
-  const handleDeleteConsumable = (consumableId: string) => {
-    setConsumables(consumables.filter(c => c.id !== consumableId));
-    toast.success("Consumable removed successfully");
+  const handleDeleteConsumable = async (consumableId: string) => {
+    try {
+      await removeConsumable(consumableId);
+      toast.success("Consumable removed successfully");
+    } catch (error) {
+      console.error("Error removing consumable:", error);
+      toast.error("Failed to remove consumable");
+    }
   };
 
   return (

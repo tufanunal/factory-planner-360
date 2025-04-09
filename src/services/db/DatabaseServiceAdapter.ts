@@ -1,5 +1,5 @@
+
 import SqlDatabaseService from './SqlDatabaseService'; // Local storage implementation
-import PostgresService from './PostgresService'; // PostgreSQL implementation
 import { 
   Machine, 
   Part, 
@@ -8,8 +8,9 @@ import {
   CalendarState
 } from '@/types/all';
 
-// Toggle which implementation to use
-const USE_POSTGRES = process.env.USE_POSTGRES === 'true';
+// In browser environments, we always use the localStorage implementation
+// The PostgreSQL implementation will only be used in a Node.js environment
+const isBrowser = typeof window !== 'undefined';
 
 /**
  * Database service adapter that allows switching between implementations
@@ -18,9 +19,9 @@ class DatabaseServiceAdapter {
   private service: any;
   
   constructor() {
-    // Choose the appropriate implementation
-    this.service = USE_POSTGRES ? PostgresService : SqlDatabaseService;
-    console.log(`Using ${USE_POSTGRES ? 'PostgreSQL' : 'localStorage'} database implementation`);
+    // In browser environments, we always use the localStorage implementation
+    this.service = SqlDatabaseService;
+    console.log(`Using localStorage database implementation (browser environment)`);
   }
   
   async initialize(): Promise<void> {
@@ -28,12 +29,6 @@ class DatabaseServiceAdapter {
       return await this.service.initialize();
     } catch (error) {
       console.error("Error initializing service:", error);
-      // If postgres fails, fallback to SQL service
-      if (USE_POSTGRES) {
-        console.log("Falling back to localStorage database");
-        this.service = SqlDatabaseService;
-        return this.service.initialize();
-      }
       throw error;
     }
   }
