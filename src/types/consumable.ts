@@ -5,4 +5,6 @@ export interface Consumable {
   unit: string;
   stock: number;
   costPerUnit: number;
+  description?: string;
+  unitCost?: number;
 }

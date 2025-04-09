@@ -1,4 +1,3 @@
-
 import SqlDatabaseService from './SqlDatabaseService'; // Local storage implementation
 import PostgresService from './PostgresService'; // PostgreSQL implementation
 import { 
@@ -25,7 +24,18 @@ class DatabaseServiceAdapter {
   }
   
   async initialize(): Promise<void> {
-    return this.service.initialize();
+    try {
+      return await this.service.initialize();
+    } catch (error) {
+      console.error("Error initializing service:", error);
+      // If postgres fails, fallback to SQL service
+      if (USE_POSTGRES) {
+        console.log("Falling back to localStorage database");
+        this.service = SqlDatabaseService;
+        return this.service.initialize();
+      }
+      throw error;
+    }
   }
   
   // Machine methods

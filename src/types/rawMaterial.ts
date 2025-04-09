@@ -5,4 +5,6 @@ export interface RawMaterial {
   unit: string;
   stock: number;
   costPerUnit: number;
+  description?: string;
+  unitCost?: number;
 }

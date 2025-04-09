@@ -10,4 +10,5 @@ export interface Machine {
   category?: string;
   hourlyCost?: number;
   labourPersonHour?: number;
+  description?: string;
 }

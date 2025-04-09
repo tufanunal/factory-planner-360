@@ -8,6 +8,9 @@ export interface Part {
   stock: number;
   status: 'Active' | 'Low Stock' | 'Discontinued';
   description?: string;
+  unit?: string;
+  cycleTime?: number;
+  piecesPerCycle?: number;
   consumables: {
     consumableId: string;
     amount: number;

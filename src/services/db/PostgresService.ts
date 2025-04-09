@@ -1,4 +1,3 @@
-
 import { Pool, QueryResult } from 'pg';
 import { dbConfig, poolConfig } from '@/config/database';
 import { 
@@ -80,9 +79,9 @@ class PostgresService {
       machine.description || '',  // Handle optional property
       machine.status,
       machine.availability,
-      machine.hourlyCost,
-      machine.labourPersonHour,
-      machine.category
+      machine.hourlyCost || 0,
+      machine.labourPersonHour || 0,
+      machine.category || ''
     ];
     
     const results = await this.executeQuery<Machine>(query, params);
@@ -241,7 +240,7 @@ class PostgresService {
       consumable.name,
       consumable.description || '',  // Handle optional property
       consumable.unit || '',
-      consumable.unitCost || 0
+      consumable.unitCost || consumable.costPerUnit || 0  // Use either property
     ];
     
     const results = await this.executeQuery<Consumable>(query, params);
@@ -274,7 +273,7 @@ class PostgresService {
       rawMaterial.name,
       rawMaterial.description || '',  // Handle optional property
       rawMaterial.unit || '',
-      rawMaterial.unitCost || 0
+      rawMaterial.unitCost || rawMaterial.costPerUnit || 0  // Use either property
     ];
     
     const results = await this.executeQuery<RawMaterial>(query, params);
