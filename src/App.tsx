@@ -18,7 +18,15 @@ import CostBreakdown from "./pages/CostBreakdown";
 import RawMaterials from "./pages/RawMaterials";
 import Calendar from "./pages/Calendar";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      staleTime: 30000,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 // Wrap routes with loading indicator
 const AppRoutes = () => {
@@ -46,7 +54,7 @@ const AppRoutes = () => {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <ThemeProvider defaultTheme="light">
+    <ThemeProvider>
       <DataProvider>
         <TooltipProvider>
           <Toaster />

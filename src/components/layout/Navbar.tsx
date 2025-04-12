@@ -10,7 +10,8 @@ import {
   TrendingUp, 
   Calculator, 
   Home,
-  SunMoon,
+  Moon,
+  Sun,
   Layers,
   Calendar
 } from 'lucide-react';
@@ -38,7 +39,7 @@ const navItems: NavItem[] = [
 const Navbar = () => {
   const location = useLocation();
   const [scrolled, setScrolled] = useState(false);
-  const { theme, setTheme } = useTheme();
+  const { theme, toggleTheme } = useTheme();
   
   useEffect(() => {
     const handleScroll = () => {
@@ -48,10 +49,6 @@ const Navbar = () => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-
-  const toggleTheme = () => {
-    setTheme(theme === 'light' ? 'dark' : 'light');
-  };
 
   return (
     <nav 
@@ -93,8 +90,13 @@ const Navbar = () => {
             onClick={toggleTheme}
             className="ml-2 rounded-full"
             aria-label="Toggle theme"
+            title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
           >
-            <SunMoon className="h-5 w-5" />
+            {theme === 'dark' ? (
+              <Sun className="h-5 w-5" />
+            ) : (
+              <Moon className="h-5 w-5" />
+            )}
           </Button>
         </div>
         
